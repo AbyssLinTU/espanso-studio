@@ -14,28 +14,30 @@ except ImportError:
     pass  # We will install it shortly, but handle gracefully
 
 from ruamel.yaml import YAML
+from node_editor import NodeCanvas, NodeGraphCompiler, NodeCompilerError
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  ТЕМА И СТИЛИ (FLUENT DESIGN)
 # ─────────────────────────────────────────────────────────────────────────────
 class Theme:
-    BG_ROOT = "#0C0C0F"        # Самый тёмный (для Preview и Sidebar-фона)
-    BG_SIDEBAR = "#15151A"     # Чуть светлее для Sidebar
-    BG_MAIN = "#1A1A22"        # Основная зона (Dashboard)
+    BG_ROOT = "#0B0B0D"        # Глубокий темный
+    BG_SIDEBAR = "#1E1E21"     # Более светлый
+    BG_MAIN = "#0B0B0D"        # Canvas / Main area
+    BG_BORDER = "#333338"      # Разделители
     
-    BG_CARD = "#21212B"        # Цвет карточки
-    BG_CARD_HOVER = "#2A2A35"  # Hover-эффект
+    BG_CARD = "#21212B"
+    BG_CARD_HOVER = "#2A2A35"
     
-    ACCENT = "#4F46E5"         # Электрик индиго (кнопки)
-    ACCENT_HOVER = "#4338CA"
+    ACCENT = "#5865F2"         # Индиго
+    ACCENT_HOVER = "#4752C4"
     
-    TEXT_MAIN = "#F3F4F6"
+    TEXT_MAIN = "#E1E1E6"
     TEXT_MUTED = "#9CA3AF"
     
-    RADIUS_LARGE = 15
+    RADIUS_LARGE = 12
     RADIUS_SMALL = 8
     
-    FONT_FAMILY = "Segoe UI"   # Нативный Windows-шрифт
+    FONT_FAMILY = "Segoe UI"
     
     @classmethod
     def font(cls, size=13, weight="normal"):
@@ -333,119 +335,218 @@ class FluentStudioApp(ctk.CTk):
         except Exception as e:
             self.show_toast("Error", str(e), icon="cancel")
 
-    # ── РЕЖИМ: CONSTRUCTOR (ADD NEW) ───────────────────────────────────────────
+    # ── РЕЖИМ: CONSTRUCTOR (NODE EDITOR) ───────────────────────────────────────
     def open_constructor(self, edit_index=None):
         self._clear_main()
         self.update_preview(None)
-        
         self.edit_index = edit_index
         
         topbar = ctk.CTkFrame(self.main_container, fg_color="transparent")
-        topbar.pack(fill="x", padx=20, pady=20)
-        title_text = "Edit Trigger" if edit_index is not None else "Create Trigger"
-        ctk.CTkLabel(topbar, text=title_text, font=Theme.font(24, "bold")).pack(side="left")
+        topbar.pack(fill="x", padx=20, pady=10)
+        
+        title_text = "Node Graph Editor" if edit_index is not None else "Create Macro Blueprint"
+        ctk.CTkLabel(topbar, text=title_text, font=Theme.font(24, "bold"), text_color=Theme.TEXT_MAIN).pack(side="left")
 
-        builder = ctk.CTkFrame(self.main_container, fg_color="transparent")
-        builder.pack(fill="both", expand=True, padx=20)
+        btn_save = ctk.CTkButton(topbar, text="Save Blueprint", height=35, font=Theme.font(14, "bold"), fg_color=Theme.ACCENT, hover_color=Theme.ACCENT_HOVER, corner_radius=Theme.RADIUS_SMALL, command=self._save_new_match)
+        btn_save.pack(side="right")
         
-        form_frame = ctk.CTkFrame(builder, fg_color=Theme.BG_SIDEBAR, corner_radius=Theme.RADIUS_LARGE)
-        form_frame.pack(fill="x", pady=10)
+        # Контентная зона: Tools | Canvas | Properties
+        content_frame = ctk.CTkFrame(self.main_container, fg_color="transparent")
+        content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        
+        # ── TOOLS (LEFT) ──
+        self.tools_width = 160
+        tools_frame = ctk.CTkFrame(content_frame, width=self.tools_width, fg_color=Theme.BG_SIDEBAR, corner_radius=Theme.RADIUS_LARGE)
+        tools_frame.pack(side="left", fill="y", padx=0)
+        tools_frame.pack_propagate(False)
 
-        ctk.CTkLabel(form_frame, text="Trigger Keyword:", anchor="w").pack(fill="x", padx=15, pady=(15, 5))
+        tools_header = ctk.CTkFrame(tools_frame, fg_color="transparent")
+        tools_header.pack(fill="x", padx=10, pady=10)
+        tools_lbl = ctk.CTkLabel(tools_header, text="Nodes", font=Theme.font(14, "bold"))
+        tools_lbl.pack(side="left")
         
-        self.new_trigger_var = tk.StringVar(value=":example")
-        self.type_var = tk.StringVar(value="text")
-        self.new_val_var = tk.StringVar(value="Hello")
+        tools_content = ctk.CTkFrame(tools_frame, fg_color="transparent")
+        tools_content.pack(fill="both", expand=True)
+
+        def add_node(ntype):
+            self.canvas.add_node(ntype, 300, 300)
+            
+        btn_opts = dict(width=120, height=35, fg_color=Theme.BG_CARD, hover_color=Theme.BG_CARD_HOVER, text_color=Theme.TEXT_MAIN, anchor="w")
+        ctk.CTkButton(tools_content, text="📄 Text Node", command=lambda: add_node("text"), **btn_opts).pack(pady=5, padx=15)
+        ctk.CTkButton(tools_content, text="📅 Date Node", command=lambda: add_node("date"), **btn_opts).pack(pady=5, padx=15)
+        ctk.CTkButton(tools_content, text="🖥 Shell Node", command=lambda: add_node("shell"), **btn_opts).pack(pady=5, padx=15)
         
-        if edit_index is not None:
-            match = self.matches[edit_index]
-            self.new_trigger_var.set(match.get("trigger", ""))
-            if "vars" in match and match["vars"]:
-                v = match["vars"][0]
-                if v.get("type") == "date":
-                    self.type_var.set("date")
-                    self.new_val_var.set(v.get("params", {}).get("format", "%Y-%m-%d"))
-                elif v.get("type") == "shell":
-                    self.type_var.set("shell")
-                    self.new_val_var.set(v.get("params", {}).get("cmd", ""))
+        ctk.CTkLabel(tools_content, text="Trigger Keyword", font=Theme.font(12, "bold")).pack(pady=(30, 5), padx=15, anchor="w")
+        self.trigger_var = tk.StringVar(value=":hw")
+        self.trigger_var.trace_add("write", lambda *_: self._live_preview_update())
+        ctk.CTkEntry(tools_content, textvariable=self.trigger_var, width=120).pack(padx=15)
+
+        self.left_collapsed = False
+        def toggle_left():
+            if self.left_collapsed:
+                tools_frame.configure(width=self.tools_width)
+                tools_content.pack(fill="both", expand=True)
+                tools_lbl.pack(side="left")
+                btn_col_left.configure(text="<")
             else:
-                self.type_var.set("text")
-                self.new_val_var.set(match.get("replace", ""))
+                tools_content.pack_forget()
+                tools_lbl.pack_forget()
+                tools_frame.configure(width=36)
+                btn_col_left.configure(text=">")
+            self.left_collapsed = not self.left_collapsed
+
+        btn_col_left = ctk.CTkButton(tools_header, text="<", width=20, height=20, fg_color="transparent", hover_color=Theme.BG_BORDER, command=toggle_left)
+        btn_col_left.pack(side="right")
+
+        # SPLITTER LEFT
+        splitter_left = ctk.CTkFrame(content_frame, width=6, fg_color="transparent", cursor="sb_h_double_arrow", corner_radius=0)
+        splitter_left.pack(side="left", fill="y", padx=2)
+        
+        def drag_left(e):
+            if self.left_collapsed: return
+            new_w = max(50, min(300, e.x_root - content_frame.winfo_rootx()))
+            self.tools_width = new_w
+            tools_frame.configure(width=new_w)
+        splitter_left.bind("<B1-Motion>", drag_left)
+
+        # ── PROPERTIES (RIGHT) ──
+        self.prop_width = 250
+        prop_frame = ctk.CTkFrame(content_frame, width=self.prop_width, fg_color=Theme.BG_SIDEBAR, corner_radius=Theme.RADIUS_LARGE)
+        prop_frame.pack(side="right", fill="y", padx=0)
+        prop_frame.pack_propagate(False)
+
+        prop_header = ctk.CTkFrame(prop_frame, fg_color="transparent")
+        prop_header.pack(fill="x", padx=10, pady=10)
+        btn_col_right = ctk.CTkButton(prop_header, text=">", width=20, height=20, fg_color="transparent", hover_color=Theme.BG_BORDER)
+        btn_col_right.pack(side="left")
+        prop_lbl = ctk.CTkLabel(prop_header, text="Properties", font=Theme.font(14, "bold"))
+        prop_lbl.pack(side="right")
+
+        self.prop_container = ctk.CTkFrame(prop_frame, fg_color="transparent")
+        self.prop_container.pack(fill="both", expand=True, padx=15)
+
+        self.right_collapsed = False
+        def toggle_right():
+            if self.right_collapsed:
+                prop_frame.configure(width=self.prop_width)
+                self.prop_container.pack(fill="both", expand=True, padx=15)
+                prop_lbl.pack(side="right")
+                btn_col_right.configure(text=">")
+            else:
+                self.prop_container.pack_forget()
+                prop_lbl.pack_forget()
+                prop_frame.configure(width=36)
+                btn_col_right.configure(text="<")
+            self.right_collapsed = not self.right_collapsed
+        btn_col_right.configure(command=toggle_right)
+
+        # SPLITTER RIGHT
+        splitter_right = ctk.CTkFrame(content_frame, width=6, fg_color="transparent", cursor="sb_h_double_arrow", corner_radius=0)
+        splitter_right.pack(side="right", fill="y", padx=2)
+
+        def drag_right(e):
+            if self.right_collapsed: return
+            max_x = content_frame.winfo_rootx() + content_frame.winfo_width()
+            new_w = max(100, min(500, max_x - e.x_root))
+            self.prop_width = new_w
+            prop_frame.configure(width=new_w)
+        splitter_right.bind("<B1-Motion>", drag_right)
+
+        # ── CANVAS (CENTER) ──
+        canvas_frame = ctk.CTkFrame(content_frame, fg_color=Theme.BG_ROOT, corner_radius=Theme.RADIUS_LARGE)
+        canvas_frame.pack(side="left", fill="both", expand=True)
+        
+        self.canvas = NodeCanvas(canvas_frame, self._on_canvas_change)
+        self.canvas.pack(fill="both", expand=True)
+        
+        if edit_index is None:
+            self.canvas.add_node("text", 400, 250)
+
+    def _on_canvas_change(self):
+        # Update Properties Panel
+        for widget in self.prop_container.winfo_children():
+            widget.destroy()
+            
+        selected = self.canvas.get_selected()
+        if selected:
+            ctk.CTkLabel(self.prop_container, text=f"Type: {selected.type.capitalize()}", text_color=Theme.TEXT_MUTED).pack(anchor="w", pady=(0, 10))
+            ctk.CTkLabel(self.prop_container, text="Value / Settings:").pack(anchor="w")
+            
+            # Use Textbox for text nodes so multiple lines work
+            if selected.type == "text":
+                tb = ctk.CTkTextbox(self.prop_container, height=150)
+                tb.pack(fill="x", pady=5)
+                tb.insert("1.0", selected.value)
                 
-        self.new_trigger_var.trace_add("write", self._live_preview_update)
-        trig_entry = ctk.CTkEntry(form_frame, textvariable=self.new_trigger_var, height=35)
-        trig_entry.pack(fill="x", padx=15, pady=(0, 15))
-
-        ctk.CTkLabel(form_frame, text="Replacement Type:", anchor="w").pack(fill="x", padx=15, pady=(5, 5))
-        
-        radio_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
-        radio_frame.pack(fill="x", padx=15, pady=(0, 15))
-        
-        for bt in BLOCK_TYPES:
-            ctk.CTkRadioButton(
-                radio_frame, text=f"{bt['icon']} {bt['name']}", 
-                variable=self.type_var, value=bt["id"],
-                command=self._live_preview_update
-            ).pack(side="left", padx=10)
-
-        ctk.CTkLabel(form_frame, text="Value / Content:", anchor="w").pack(fill="x", padx=15, pady=(5, 5))
-        self.new_val_var.trace_add("write", self._live_preview_update)
-        val_entry = ctk.CTkEntry(form_frame, textvariable=self.new_val_var, height=35)
-        val_entry.pack(fill="x", padx=15, pady=(0, 20))
-
-        btn = ctk.CTkButton(builder, text="Save Match", height=40, font=Theme.font(14, "bold"), fg_color=Theme.ACCENT, hover_color=Theme.ACCENT_HOVER, corner_radius=Theme.RADIUS_SMALL, command=self._save_new_match)
-        btn.pack(anchor="e", pady=20)
-
-        self._live_preview_update() # первый рендер
+                def on_text_change(event):
+                    # update after keypress
+                    self.after(50, lambda: selected.set_value(tb.get("1.0", "end-1c")))
+                    self.after(60, self._live_preview_update)
+                tb.bind("<KeyRelease>", on_text_change)
+            else:
+                var = tk.StringVar(value=selected.value)
+                def on_var_change(*_):
+                    selected.set_value(var.get())
+                    self._live_preview_update()
+                    
+                var.trace_add("write", on_var_change)
+                ctk.CTkEntry(self.prop_container, textvariable=var).pack(fill="x", pady=5)
+                
+            del_btn = ctk.CTkButton(self.prop_container, text="Delete Node", fg_color="#7F1D1D", hover_color="#991B1B", command=self.canvas.delete_selected)
+            del_btn.pack(fill="x", pady=(20, 0))
+        else:
+            ctk.CTkLabel(self.prop_container, text="Select a node\nto edit properties.", text_color=Theme.TEXT_MUTED).pack(pady=40)
+            
+        self._live_preview_update()
 
     def _live_preview_update(self, *_):
-        trigger = self.new_trigger_var.get().strip()
-        btype = self.type_var.get()
-        val = self.new_val_var.get().strip()
+        if not hasattr(self, 'canvas') or not self.canvas:
+            return
+            
+        graph_data = self.canvas.get_graph_data()
+        trigger_cmd = self.trigger_var.get().strip()
         
-        if not trigger:
+        if not trigger_cmd:
+            self.update_preview(None)
+            self._set_preview_error("🔴 Введите Trigger Keyword слева")
+            return
+            
+        if not graph_data["nodes"]:
             self.update_preview(None)
             return
 
-        match_obj = {"trigger": trigger}
-        
-        if btype == "text":
-            match_obj["replace"] = val
-        elif btype == "date":
-            match_obj["replace"] = "{{mydate}}"
-            match_obj["vars"] = [{"name": "mydate", "type": "date", "params": {"format": val or "%Y-%m-%d"}}]
-        elif btype == "shell":
-            match_obj["replace"] = "{{output}}"
-            match_obj["vars"] = [{"name": "output", "type": "shell", "params": {"cmd": val or "echo"}}]
+        try:
+            compiled_match = NodeGraphCompiler.compile(graph_data["nodes"], graph_data["edges"], trigger_cmd)
+            self.update_preview(compiled_match)
+        except NodeCompilerError as e:
+            self.update_preview(None)
+            self._set_preview_error(f"🔴 Ошибка компиляции:\n{str(e)}")
             
-        self.update_preview(match_obj)
+    def _set_preview_error(self, text):
+        self.preview_box.configure(state="normal")
+        self.preview_box.delete("1.0", "end")
+        self.preview_box.insert("end", text)
+        self.preview_box.configure(state="disabled")
 
     def _save_new_match(self):
-        match_obj = {"trigger": self.new_trigger_var.get().strip()}
-        btype = self.type_var.get()
-        val = self.new_val_var.get().strip()
-
-        if not match_obj["trigger"]:
-            self.show_toast("Error", "Trigger cannot be empty", icon="cancel")
-            return
-
-        if btype == "text":
-            match_obj["replace"] = val
-        elif btype == "date":
-            match_obj["replace"] = "{{mydate}}"
-            match_obj["vars"] = [{"name": "mydate", "type": "date", "params": {"format": val or "%Y-%m-%d"}}]
-        elif btype == "shell":
-            match_obj["replace"] = "{{output}}"
-            match_obj["vars"] = [{"name": "output", "type": "shell", "params": {"cmd": val or "echo"}}]
-
-        if getattr(self, "edit_index", None) is not None:
-            self.matches[self.edit_index] = match_obj
-        else:
-            self.matches.append(match_obj)
+        graph_data = self.canvas.get_graph_data()
+        trigger_cmd = self.trigger_var.get().strip()
+        
+        try:
+            match_obj = NodeGraphCompiler.compile(graph_data["nodes"], graph_data["edges"], trigger_cmd)
+            # Store hidden metadata about the graph layout for future editing (if espanso doesn't strip it. Actually espanso ignores unknown keys if not strict, but let's be safe. We will save it in MVP)
+            # match_obj["_graph"] = graph_data
             
-        self._save_state()
-        self.show_toast("Success", "Match saved successfully!", icon="check")
-        self.load_dashboard()
+            if getattr(self, "edit_index", None) is not None:
+                self.matches[self.edit_index] = match_obj
+            else:
+                self.matches.append(match_obj)
+                
+            self._save_state()
+            self.show_toast("Success", "Blueprint compiled & saved!", icon="check")
+            self.load_dashboard()
+        except NodeCompilerError as e:
+            self.show_toast("Compilation Error", str(e), icon="cancel")
 
 
 if __name__ == "__main__":
