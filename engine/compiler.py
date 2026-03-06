@@ -1,17 +1,27 @@
+# -*- coding: utf-8 -*-
+
+
 class NodeCompilerError(Exception):
     pass
 
 
 class NodeGraphCompiler:
-    """Compiles a visual node graph into a valid Espanso YAML match dict."""
+    """Compiles a visual node graph into a valid Espanso YAML match dict.
+
+    Multi-input aware: a single Text Output node may receive connections
+    from many provider nodes.  The compiler collects all incoming variables
+    into a unified 'vars' block and inserts their placeholders into the
+    'replace' field in connection order (in1, in2, ... inN).
+    """
 
     @staticmethod
     def compile(nodes, edges, trigger_text):
         if not trigger_text:
             raise NodeCompilerError("Trigger cannot be empty")
 
-        # ── Build adjacency / input maps ──────────────────────────────────
+        # -- Build adjacency / input maps ----------------------------------
         adjacency = {n["id"]: [] for n in nodes}
+        # inputs_map: tgt_id -> {input_name: src_id}
         inputs_map = {n["id"]: {} for n in nodes}
 
         for e in edges:
@@ -21,7 +31,7 @@ class NodeGraphCompiler:
             if tgt in inputs_map:
                 inputs_map[tgt][input_name] = src
 
-        # ── Cycle detection (DFS) ────────────────────────────────────────
+        # -- Cycle detection (DFS) -----------------------------------------
         visited = set()
         rec_stack = set()
 
@@ -40,21 +50,23 @@ class NodeGraphCompiler:
         for n in nodes:
             if n["id"] not in visited:
                 if is_cyclic(n["id"]):
-                    raise NodeCompilerError("Обнаружена циклическая зависимость в графе!")
+                    raise NodeCompilerError(
+                        "Cycle detected in the node graph!")
 
-        # ── Find terminal text node ──────────────────────────────────────
+        # -- Find terminal text node ---------------------------------------
         text_nodes = [n for n in nodes if n["type"] == "text"]
         if not text_nodes:
-            raise NodeCompilerError("Необходимо добавить хотя бы один Text узел для вывода.")
+            raise NodeCompilerError(
+                "Add at least one Text Output node.")
         if len(text_nodes) > 1:
-            raise NodeCompilerError("Поддерживается только один финальный Text узел.")
+            raise NodeCompilerError(
+                "Only one final Text Output node is supported.")
 
         final_node = text_nodes[0]
 
-        # ── Traverse graph and collect vars ──────────────────────────────
+        # -- Traverse graph and collect vars -------------------------------
         ordered_vars = []
         visited_vars = set()
-        # Map node_id -> var_name for substitution
         var_names = {}
 
         def _var_name(node_id):
@@ -65,7 +77,8 @@ class NodeGraphCompiler:
 
         def traverse(node_id):
             # Visit dependencies first
-            for in_name, src_id in inputs_map.get(node_id, {}).items():
+            for in_name in sorted(inputs_map.get(node_id, {}).keys()):
+                src_id = inputs_map[node_id][in_name]
                 traverse(src_id)
 
             if node_id in visited_vars:
@@ -80,14 +93,12 @@ class NodeGraphCompiler:
             val = node_data.get("value", "")
             vname = _var_name(node_id)
 
-            # ── clipboard: no YAML var, inline substitution later ────
+            # clipboard: inline substitution later
             if ntype == "clipboard":
-                # Will be inlined as {{clipboard}} in replace text
                 return
 
-            # ── concat: no YAML var, resolved as concatenation ───────
+            # concat: resolved inline
             if ntype == "concat":
-                # Resolved inline during replace text building
                 return
 
             v_dict = {"name": vname}
@@ -95,12 +106,15 @@ class NodeGraphCompiler:
             if ntype == "shell":
                 v_dict["type"] = "shell"
                 cmd = val
-                for in_name, src_id in inputs_map.get(node_id, {}).items():
+                for in_name in sorted(inputs_map.get(node_id, {}).keys()):
+                    src_id = inputs_map[node_id][in_name]
                     src_node = next((n for n in nodes if n["id"] == src_id), None)
                     if src_node and src_node["type"] == "clipboard":
                         cmd = cmd.replace(f"{{{{{in_name}}}}}", "{{clipboard}}")
                     else:
-                        cmd = cmd.replace(f"{{{{{in_name}}}}}", f"{{{{{_var_name(src_id)}}}}}")
+                        cmd = cmd.replace(
+                            f"{{{{{in_name}}}}}",
+                            f"{{{{{_var_name(src_id)}}}}}")
                 v_dict["params"] = {"cmd": cmd}
 
             elif ntype == "date":
@@ -110,7 +124,8 @@ class NodeGraphCompiler:
             elif ntype == "form":
                 v_dict["type"] = "form"
                 field_name = val or "field"
-                v_dict["params"] = {"layout": f"{field_name}: [[{field_name}]]"}
+                v_dict["params"] = {
+                    "layout": f"{field_name}: [[{field_name}]]"}
 
             elif ntype == "random":
                 v_dict["type"] = "random"
@@ -121,7 +136,6 @@ class NodeGraphCompiler:
 
             elif ntype == "script":
                 v_dict["type"] = "shell"
-                # Wrap python code properly
                 code = val.replace('"', '\\"')
                 v_dict["params"] = {"cmd": f'python -c "{code}"'}
 
@@ -129,7 +143,7 @@ class NodeGraphCompiler:
 
         traverse(final_node["id"])
 
-        # ── Build replace text ───────────────────────────────────────────
+        # -- Build replace text (multi-input aware) ------------------------
         def resolve_node_ref(node_id):
             """Returns the text placeholder for a given node's output."""
             nd = next((n for n in nodes if n["id"] == node_id), None)
@@ -138,7 +152,6 @@ class NodeGraphCompiler:
             if nd["type"] == "clipboard":
                 return "{{clipboard}}"
             if nd["type"] == "concat":
-                # Concatenate all inputs of the concat node
                 parts = []
                 for in_name in sorted(inputs_map.get(node_id, {}).keys()):
                     src_id = inputs_map[node_id][in_name]
@@ -147,9 +160,33 @@ class NodeGraphCompiler:
             return "{{" + _var_name(node_id) + "}}"
 
         replace_text = final_node.get("value", "")
-        for in_name, src_id in inputs_map.get(final_node["id"], {}).items():
-            ref = resolve_node_ref(src_id)
-            replace_text = replace_text.replace(f"{{{{{in_name}}}}}", ref)
+
+        # Collect all inputs to text node, sorted by port name (in1, in2, ...)
+        text_inputs = inputs_map.get(final_node["id"], {})
+
+        # Strategy: if the user's replace_text already contains {{inX}}
+        # placeholders, do named substitution.  Otherwise, append all
+        # variable references at the end.
+        has_named_placeholders = any(
+            f"{{{{{k}}}}}" in replace_text for k in text_inputs
+        )
+
+        if has_named_placeholders:
+            for in_name in sorted(text_inputs.keys()):
+                src_id = text_inputs[in_name]
+                ref = resolve_node_ref(src_id)
+                replace_text = replace_text.replace(
+                    f"{{{{{in_name}}}}}", ref)
+        else:
+            # Auto-append all connected vars in port order
+            appended = []
+            for in_name in sorted(text_inputs.keys()):
+                src_id = text_inputs[in_name]
+                ref = resolve_node_ref(src_id)
+                appended.append(ref)
+            if appended:
+                separator = " " if replace_text else ""
+                replace_text = replace_text + separator + " ".join(appended)
 
         match_obj = {"trigger": trigger_text, "replace": replace_text}
         if ordered_vars:
