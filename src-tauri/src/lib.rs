@@ -3,6 +3,11 @@ use std::path::PathBuf;
 use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[tauri::command]
 fn get_espanso_path() -> Result<String, String> {
     let appdata = std::env::var("APPDATA").map_err(|e| e.to_string())?;
@@ -63,6 +68,7 @@ fn restart_espanso() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     std::process::Command::new("cmd")
         .args(["/C", "espanso restart"])
+        .creation_flags(CREATE_NO_WINDOW)
         .spawn()
         .map_err(|e| e.to_string())?;
 
@@ -81,6 +87,7 @@ fn check_espanso_installed() -> bool {
     #[cfg(target_os = "windows")]
     let output = std::process::Command::new("cmd")
         .args(["/C", "espanso --version"])
+        .creation_flags(CREATE_NO_WINDOW)
         .output();
 
     #[cfg(not(target_os = "windows"))]
@@ -129,6 +136,7 @@ async fn install_espanso(app: tauri::AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new(resource_path)
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("Failed to launch installer: {}", e))?;
     }
