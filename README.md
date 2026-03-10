@@ -3,45 +3,63 @@
 # ⚡ Espanso Studio Pro
 
 > **The Ultimate Visual Environment for Espanso.**  
-> Effortlessly construct, manage, and edit your text expansion rules in a stunning Windows 11 Fluent Design interface. Experience zero YAML syntax errors and maximum productivity.
+> Built with **Rust (Tauri)** and **React (Vite)** for maximum performance and a premium desktop experience.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows%2011-0078D4?style=for-the-badge&logo=windows" alt="Platform">
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/Rust-Tauri%202.0-F74C00?style=for-the-badge&logo=rust" alt="Rust">
+  <img src="https://img.shields.io/badge/Frontend-React%2019-61DAFB?style=for-the-badge&logo=react" alt="React">
   <img src="https://img.shields.io/github/license/AbyssLinTU/espanso-studio?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/github/stars/AbyssLinTU/espanso-studio?style=for-the-badge" alt="Stars">
 </p>
 
-<!-- 🎨 TODO: Replace with the generated Hero Image (1280x640px) -->
-<img src="https://via.placeholder.com/1280x640.png?text=Espanso+Studio+Pro+-+Fluent+Design+UI" alt="Hero Banner" width="100%">
+<!-- 🎨 Dynamic Hero Banner -->
+<div style="background: linear-gradient(135deg, #1e1e2d 0%, #0f0f11 100%); padding: 60px; border-radius: 24px; border: 1px solid #333; margin: 40px 0;">
+  <h1 style="color: #6366F1; font-size: 48px; margin-bottom: 10px;">ES</h1>
+  <p style="color: #A1A1AA; font-size: 20px;">Premium YAML Visual Orchestrator</p>
+</div>
 
 </div>
 
 ---
 
-## 🌟 Why Espanso Studio Pro?
+## 🌟 Evolution: From Python to Rust + React
 
-Writing and managing YAML configurations manually can be tedious, formatting-sensitive, and error-prone. **Espanso Studio Pro** bridges the gap between Espanso’s powerful text expansion engine and a premium graphical user interface. 
+We’ve migrated the core engine to **Rust** to provide a blazing-fast, secure, and native desktop experience. The UI has been completely rebuilt using **React 19** and **Vite**, featuring immersive glassmorphism, fluid animations, and a seamless "Blueprint" visual logic system.
 
-Whether you are a power user managing hundreds of triggers or a beginner wanting to save time, Studio Pro makes rule creation a breeze. It acts as a safety net, automatically maintaining backups while providing deep integration with the core engine.
+### Why the change?
+- **Performance**: Zero-lag interface even with massive YAML files.
+- **Safety**: Rust's memory safety and Tauri's hardened sandbox.
+- **UX**: Modern web technologies allow for a level of design polish previously impossible.
 
 ## ✨ Key Features
 
 | Feature | Description |
 | :--- | :--- |
-| **🎨 Fluent Design UI** | Native Windows 11 aesthetic featuring immersive glassmorphism, responsive hover cards, and a deep dark mode. |
-| **👁️ Live YAML Preview** | See your cleanly-formatted YAML code generate in real-time as you construct triggers. Implicitly learn syntax without breaking anything. |
-| **🛡️ Backup Manager** | Safe by design. Automatic `.bak` file creation on every edit prevents accidental data loss. |
-| **🔄 Seamless Apply** | One-click Espanso engine restart directly from the sidebar. No more manual terminal commands required. |
-| **📦 Dynamic Constructor** | Easily construct complex blocks through the visual wizard: Simple Text, Shell Commands, Date variables, and more! |
+| **🎨 Blueprint Mode** | A visual nodes editor to build complex text expansion logic without writing a single line of YAML. |
+| **⚡ Quick Mode** | Speed-oriented editor for simple replacements with instant variable injection. |
+| **👁️ Live Preview** | Real-time formatted YAML generation as you construct your logic. |
+| **🔄 Hybrid Sync** | Seamlessly switch between Blueprint and Quick modes with bi-directional synchronization. |
+| **📦 Dynamic Variables** | Built-in support for Date snippets, Shell commands, Clipboard injection, and more. |
+| **🛡️ Auto-Restart** | Instant propagation of changes to the Espanso engine directly from the UI. |
 
-## 🚀 Installation & Usage
+## 🛠️ Tech Stack
+
+- **Core Engine:** [Rust](https://www.rust-lang.org/)
+- **Frontend:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Bundler:** [Vite](https://vitejs.dev/)
+- **Desktop Framework:** [Tauri 2.0](https://tauri.app/)
+- **Styling:** Tailwind CSS + Framer Motion
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
+- **Node Editor:** [@xyflow/react](https://reactflow.dev/) (React Flow)
+
+## 🚀 Getting Started
 
 ### Prerequisites
-1. Installed **[Python 3.10+](https://www.python.org/downloads/)**
-2. Installed and running **[Espanso](https://espanso.org/)**
+1. Installed **[Node.js](https://nodejs.org/)** (LTS)
+2. Installed **[Rust Toolchain](https://rustup.rs/)**
+3. Installed and running **[Espanso](https://espanso.org/)**
 
-### Quick Start
+### Installation
 
 1. **Clone the repository:**
    ```bash
@@ -49,29 +67,26 @@ Whether you are a power user managing hundreds of triggers or a beginner wanting
    cd espanso-studio
    ```
 
-2. **Install necessary dependencies:**
+2. **Install dependencies:**
    ```bash
-   pip install -r requirements.txt
+   npm install
    ```
 
-3. **Launch the application:**
+3. **Run in Development Mode:**
    ```bash
-   python main.py
+   npm run tauri dev
    ```
 
-## 🛠️ Stack & Technologies
-- **Core:** Python
-- **GUI Framework:** [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)
-- **Data Serialization:** `ruamel.yaml` (preserves YAML comments and precise structure)
-- **Toast Notifications:** `CTkMessagebox`
+4. **Build Production Application:**
+   ```bash
+   npm run build
+   npm run tauri build
+   ```
 
 ## 🤝 Community & Contribution
-We welcome contributions to make Espanso Studio Pro even better. Whether it's adding new block types (Forms, Scripts), improving UI elements, or writing clearer documentation.
+We welcome contributions! Whether it's adding new node types, improving the Tauri integration, or enhancing the design.
 
-Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines. If you plan to open a PR, make sure you've read them first.
-
-## 📄 License
-This project is licensed under the MIT License - see the `LICENSE` file for more details.
+Please see our [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon for Rust version) for guidelines.
 
 ---
 

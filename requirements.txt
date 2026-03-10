@@ -1,4 +1,0 @@
-customtkinter>=5.2.0
-ruamel.yaml>=0.18.0
-Pillow>=10.2.0
-CTkMessagebox>=2.5
