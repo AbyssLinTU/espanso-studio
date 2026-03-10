@@ -1,0 +1,102 @@
+use std::fs;
+use std::path::PathBuf;
+use tauri::Manager;
+use tauri_plugin_shell::ShellExt;
+
+#[tauri::command]
+fn get_espanso_path() -> Result<String, String> {
+    let appdata = std::env::var("APPDATA").map_err(|e| e.to_string())?;
+    let mut path = PathBuf::from(appdata);
+    path.push("espanso");
+    path.push("match");
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn list_yaml_files() -> Result<Vec<String>, String> {
+    let path_str = get_espanso_path()?;
+    let path = PathBuf::from(path_str);
+    
+    let mut files = Vec::new();
+    if path.exists() && path.is_dir() {
+        if let Ok(entries) = fs::read_dir(path) {
+            for entry in entries.flatten() {
+                if let Ok(file_type) = entry.file_type() {
+                    if file_type.is_file() {
+                        let name = entry.file_name().to_string_lossy().to_string();
+                        if name.ends_with(".yml") || name.ends_with(".yaml") {
+                            files.push(name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
+#[tauri::command]
+fn read_file(filename: String) -> Result<String, String> {
+    let mut path = PathBuf::from(get_espanso_path()?);
+    path.push(&filename);
+    fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", filename, e))
+}
+
+#[tauri::command]
+fn save_file(filename: String, content: String) -> Result<(), String> {
+    let mut path = PathBuf::from(get_espanso_path()?);
+    path.push(&filename);
+    
+    // Create backup if file exists (.bak)
+    if path.exists() {
+        let mut bak_path = path.clone();
+        bak_path.set_extension("bak");
+        fs::copy(&path, &bak_path).map_err(|e| e.to_string())?;
+    }
+    
+    fs::write(path, content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn restart_espanso() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    std::process::Command::new("cmd")
+        .args(["/C", "espanso restart"])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    #[cfg(not(target_os = "windows"))]
+    std::process::Command::new("sh")
+        .args(["-c", "espanso restart"])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+  tauri::Builder::default()
+    .plugin(tauri_plugin_shell::init())
+    .plugin(tauri_plugin_fs::init())
+    .setup(|app| {
+      if cfg!(debug_assertions) {
+        app.handle().plugin(
+          tauri_plugin_log::Builder::default()
+            .level(log::LevelFilter::Info)
+            .build(),
+        )?;
+      }
+      Ok(())
+    })
+    .invoke_handler(tauri::generate_handler![
+        get_espanso_path,
+        list_yaml_files,
+        read_file,
+        save_file,
+        restart_espanso
+    ])
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
+}
