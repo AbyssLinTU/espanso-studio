@@ -8,7 +8,10 @@ import { LivePreview } from './components/LivePreview';
 import { HelpView } from './components/HelpView';
 import { useStore } from './store/useStore';
 import { useResize } from './hooks/useResize';
+import { useWindowSize } from './hooks/useWindowSize';
 import { ChevronLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { pageVariants } from './utils/animations';
 
 async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   try {
@@ -38,6 +41,15 @@ function App() {
 
   // Custom panel resizer (initial 360px, min 280, max 600)
   const { width: previewWidth, startResize, isResizing } = useResize(360, 280, 600);
+
+  const { width: windowWidth } = useWindowSize();
+
+  // Auto-collapse preview on smaller screens
+  useEffect(() => {
+    if (windowWidth < 1200 && !previewCollapsed) {
+      useStore.getState().setPreviewCollapsed(true);
+    }
+  }, [windowWidth, previewCollapsed]);
 
   // Tauri init...
   const fetchFiles = useCallback(async () => {
@@ -204,10 +216,23 @@ function App() {
   }
 
   const renderContent = () => {
-    if (currentView === 'home') return <HomeView />;
-    if (currentView === 'help') return <HelpView />;
-    if (editorMode === 'quick') return <QuickEditor />;
-    return <BlueprintEditor />;
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentView === 'editor' ? `editor-${editorMode}` : currentView}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="h-full w-full"
+        >
+          {currentView === 'home' && <HomeView />}
+          {currentView === 'help' && <HelpView />}
+          {currentView === 'editor' && editorMode === 'quick' && <QuickEditor />}
+          {currentView === 'editor' && editorMode === 'blueprint' && <BlueprintEditor />}
+        </motion.div>
+      </AnimatePresence>
+    );
   };
 
   return (
@@ -230,35 +255,37 @@ function App() {
       <IconSidebar />
 
       {/* Col 2: Main Content Panel */}
-      <div className="flex-1 overflow-hidden bg-[#121214] flex flex-col min-w-[400px]">
+      <div className="flex-1 overflow-hidden bg-[#121214] flex flex-col min-w-0 w-full">
         {renderContent()}
       </div>
 
-      {/* Col 3: Draggable Resizer & LivePreview */}
-      <div 
-        className={`flex h-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          previewCollapsed ? 'w-[20px] bg-[#0F0F11] border-l border-[#2D2D30] cursor-pointer hover:bg-[#1C1C1F] group' : ''
-        }`}
-        style={!previewCollapsed ? { width: `${previewWidth}px` } : {}}
-        onClick={previewCollapsed ? togglePreview : undefined}
-        title={previewCollapsed ? "Show Live Preview" : undefined}
-      >
-        {previewCollapsed ? (
-          <div className="w-full h-full flex items-center justify-center">
-             <ChevronLeft className="w-4 h-4 text-[#71717A] group-hover:text-[#F4F4F5] group-hover:-translate-x-0.5 transition-all" strokeWidth={2.5} />
-          </div>
-        ) : (
-          <>
-            <div
-              onMouseDown={startResize}
-              className="w-1.5 bg-[#1C1C1F] hover:bg-[#6366F1]/50 active:bg-[#6366F1] transition-colors cursor-col-resize border-x border-[#2D2D30] z-20 shrink-0"
-            />
-            <div className="flex-1 overflow-hidden min-w-0">
-              <LivePreview />
+      {/* Col 3: Draggable Resizer & LivePreview (Only in Editor) */}
+      {currentView === 'editor' && (
+        <div 
+          className={`flex h-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            previewCollapsed ? 'w-[20px] bg-[#0F0F11] border-l border-[#2D2D30] cursor-pointer hover:bg-[#1C1C1F] group' : ''
+          }`}
+          style={!previewCollapsed ? { width: `${previewWidth}px` } : {}}
+          onClick={previewCollapsed ? togglePreview : undefined}
+          title={previewCollapsed ? "Show Live Preview" : undefined}
+        >
+          {previewCollapsed ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <ChevronLeft className="w-4 h-4 text-[#71717A] group-hover:text-[#F4F4F5] group-hover:-translate-x-0.5 transition-all" strokeWidth={2.5} />
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <div
+                onMouseDown={startResize}
+                className="w-1.5 bg-[#1C1C1F] hover:bg-[#6366F1]/50 active:bg-[#6366F1] transition-colors cursor-col-resize border-x border-[#2D2D30] z-20 shrink-0"
+              />
+              <div className="flex-1 overflow-hidden min-w-0">
+                <LivePreview />
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
     </div>
   );

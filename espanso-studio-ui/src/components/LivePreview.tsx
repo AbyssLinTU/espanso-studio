@@ -23,16 +23,89 @@ export const LivePreview = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-[#09090B] p-5">
-        <pre className="yaml-preview text-[14px] leading-relaxed text-[#A1A1AA] font-mono whitespace-pre-wrap">
+      <div className="flex-1 overflow-auto bg-[#09090B] p-6">
+        <pre className="yaml-preview text-[13px] leading-relaxed font-mono">
           {currentView === 'editor' ? (
-            <span className="text-[#F4F4F5]">
-              <span className="text-[#6366F1]">matches:</span>{'\n'}
-              {'  '}<span className="text-[#A1A1AA]">-</span> <span className="text-[#6366F1]">trigger:</span> <span className="text-[#10B981]">"{triggerText}"</span>{'\n'}
-              {'    '}<span className="text-[#6366F1]">replace:</span> <span className="text-[#10B981]">"{replaceText}"</span>
-            </span>
+            <>
+              <div className="text-[#6366F1] mb-1">matches:</div>
+              <div className="flex">
+                <span className="text-[#71717A] mr-2">-</span>
+                <div className="flex-1">
+                  <div className="flex gap-2">
+                    <span className="text-[#818CF8]">trigger:</span>
+                    <span className="text-[#10B981]">"{triggerText || ''}"</span>
+                  </div>
+
+                  {/* Trigger Options */}
+                  {useStore.getState().triggerOptions.word && (
+                    <div className="flex gap-2 ml-4">
+                      <span className="text-[#818CF8]">word:</span>
+                      <span className="text-[#F59E0B]">true</span>
+                    </div>
+                  )}
+                  {useStore.getState().triggerOptions.case && (
+                    <div className="flex gap-2 ml-4">
+                      <span className="text-[#818CF8]">case_sensitive:</span>
+                      <span className="text-[#F59E0B]">true</span>
+                    </div>
+                  )}
+                  {useStore.getState().triggerOptions.prop_case && (
+                    <div className="flex gap-2 ml-4">
+                      <span className="text-[#818CF8]">propagate_case:</span>
+                      <span className="text-[#F59E0B]">true</span>
+                    </div>
+                  )}
+
+                  {/* Replace */}
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-[#818CF8]">replace:</span>
+                    {replaceText.includes('\n') ? (
+                      <span className="text-[#F59E0B]">|-</span>
+                    ) : (
+                      <span className="text-[#10B981]">"{replaceText}"</span>
+                    )}
+                  </div>
+                  {replaceText.includes('\n') && (
+                    <div className="text-[#10B981] ml-4 whitespace-pre">
+                      {replaceText.split('\n').map(line => `  ${line}`).join('\n')}
+                    </div>
+                  )}
+
+                  {/* Variables */}
+                  {useStore.getState().variables.length > 0 && (
+                    <div className="mt-1">
+                      <div className="text-[#818CF8]">vars:</div>
+                      {useStore.getState().variables.map((v, i) => (
+                        <div key={i} className="ml-4">
+                          <div className="flex gap-2">
+                            <span className="text-[#71717A]">-</span>
+                            <span className="text-[#818CF8]">name:</span>
+                            <span className="text-[#10B981]">{v.name}</span>
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <span className="text-[#818CF8]">type:</span>
+                            <span className="text-[#10B981]">{v.type}</span>
+                          </div>
+                          {Object.keys(v.params).length > 0 && (
+                            <div className="ml-4">
+                              <div className="text-[#818CF8]">params:</div>
+                              {Object.entries(v.params).map(([pk, pv]) => (
+                                <div key={pk} className="ml-4 flex gap-2">
+                                  <span className="text-[#818CF8]">{pk}:</span>
+                                  <span className="text-[#10B981]">"{pv}"</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           ) : (
-            `# Select a card or\n# create a new macro`
+            <div className="text-[#52525B] italic"># Configure macro to see preview</div>
           )}
         </pre>
       </div>

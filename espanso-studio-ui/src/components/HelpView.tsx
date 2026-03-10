@@ -57,8 +57,8 @@ const InfoCard = ({ title, text, accent = 'bg-[#6366F1]/10 border-[#6366F1]/30' 
 
 export const HelpView = () => {
   return (
-    <div className="flex-1 h-screen overflow-y-auto bg-[#0B0B0D] flex justify-center">
-      <div className="w-full max-w-3xl px-6 py-12 flex flex-col gap-12">
+    <div className="flex-1 h-full overflow-y-auto bg-[#0B0B0D] flex justify-center">
+      <div className="w-full max-w-3xl px-6 pt-20 pb-12 flex flex-col gap-12">
 
         {/* Hero */}
         <div className="flex flex-col gap-2">
@@ -139,7 +139,7 @@ export const HelpView = () => {
             <InfoCard
               accent="bg-[#6366F1]/10 border-[#6366F1]/30"
               title="Word — Граница слова"
-              text="Триггер срабатывает только если перед ним стоит пробел или начало строки. Включайте, чтобы :it не срабатывало внутри слова «bitter»."
+              text="Триггер срабатывает только если перед ним стоит пробел или начало строки. Включайте, чтобы :it не срабатывало внутри слова «bitter». Также важно, чтобы пробел (или другой разделитель) был и после триггера."
             />
             <InfoCard
               accent="bg-[#10B981]/10 border-[#10B981]/30"

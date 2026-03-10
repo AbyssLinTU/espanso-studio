@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { Canvas } from './Canvas';
 import { ReactFlowProvider } from '@xyflow/react';
 import { EditorHeader } from './EditorHeader';
+import { useWindowSize } from '../hooks/useWindowSize';
 
 const NODE_PALETTE = [
   { key: 'T', label: 'Text Output' },
@@ -20,10 +21,19 @@ export const BlueprintEditor = () => {
   const {
     triggerText, setTriggerText,
     triggerOptions, setTriggerOptions,
-    nodesCollapsed, toggleNodes,
-    propsCollapsed, toggleProps,
-    nodes, setNodes, addNode,
+    nodesCollapsed, toggleNodes, setNodesCollapsed,
+    propsCollapsed, toggleProps, setPropsCollapsed,
+    nodes, addNode, updateNodeData,
   } = useStore();
+
+  const { width } = useWindowSize();
+
+  useEffect(() => {
+    if (width < 1024) {
+      if (!nodesCollapsed) setNodesCollapsed(true);
+      if (!propsCollapsed) setPropsCollapsed(true);
+    }
+  }, [width, nodesCollapsed, propsCollapsed, setNodesCollapsed, setPropsCollapsed]);
 
   const selectedNode = nodes.find(n => n.selected);
 
@@ -44,6 +54,21 @@ export const BlueprintEditor = () => {
     // Add roughly in center if clicked instead of dragged
     addNode(key, { x: 300, y: 200 });
   };
+
+  if (width < 600) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-[#121214]">
+        <EditorHeader />
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0B0B0D] text-center">
+          <Wand2 className="w-12 h-12 text-[#EF4444] mb-4 opacity-80" />
+          <h2 className="text-[18px] font-bold text-[#F4F4F5] mb-2">Window Too Small</h2>
+          <p className="text-[#A1A1AA] text-[14px] max-w-[280px]">
+            The Blueprint Editor requires more screen space. Please resize your window or switch to Quick mode.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#121214]">
@@ -139,7 +164,7 @@ export const BlueprintEditor = () => {
                 <div className="flex-1 flex flex-col p-6 w-full text-[#F4F4F5] bg-[#0B0B0D]">
                   <h3 className="text-[16px] font-bold mb-6 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
-                    {selectedNode.data.label} Properties
+                    {String(selectedNode.data.label)} Properties
                   </h3>
                   
                   {selectedNode.data.nodeType === 'trigger' ? (
@@ -151,10 +176,7 @@ export const BlueprintEditor = () => {
                           value={triggerText}
                           onChange={(e) => {
                             setTriggerText(e.target.value);
-                            const updatedNodes = nodes.map(n => 
-                              n.id === selectedNode.id ? { ...n, data: { ...n.data, label: e.target.value || 'Trigger' } } : n
-                            );
-                            setNodes(updatedNodes);
+                            updateNodeData(selectedNode.id, { label: e.target.value || 'Trigger' });
                           }}
                           className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[15px] font-bold focus:outline-none focus:border-[#6366F1]"
                         />
@@ -191,14 +213,128 @@ export const BlueprintEditor = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2">
-                       <p className="text-[14px] text-[#A1A1AA]">Content editing for <span className="text-[#6366F1] font-mono">{selectedNode.data.nodeType}</span> nodes is coming soon.</p>
-                       <div className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg p-3 mt-4">
-                         <span className="text-[12px] text-[#71717A] uppercase font-bold tracking-wider">Raw Node Data</span>
-                         <pre className="text-[12px] text-[#D4D4D8] mt-2 whitespace-pre-wrap font-mono">
-                           {JSON.stringify(selectedNode.data, null, 2)}
-                         </pre>
-                       </div>
+                    <div className="flex flex-col gap-5">
+                      {/* Common Variable Name Field */}
+                      {['D', '$', 'F', 'C', '?', '#', '&'].includes(selectedNode.data.nodeType as string) && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Variable Name</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[#6366F1] font-mono text-[14px] font-bold">{'{{'}</span>
+                            <input
+                              type="text"
+                              value={(selectedNode.data.varName as string) || ''}
+                              placeholder="unique_name"
+                              onChange={(e) => updateNodeData(selectedNode.id, { varName: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
+                              className="bg-transparent border-b border-[#2D2D30] hover:border-[#3F3F46] focus:border-[#6366F1] focus:outline-none text-[#F4F4F5] font-mono text-[14px] w-full transition-colors"
+                            />
+                            <span className="text-[#6366F1] font-mono text-[14px] font-bold">{'}}'}</span>
+                          </div>
+                        </label>
+                      )}
+
+                      {/* Text Output Editor */}
+                      {selectedNode.data.nodeType === 'T' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Static Text</span>
+                          <textarea
+                            value={(selectedNode.data.text as string) || ''}
+                            onChange={(e) => updateNodeData(selectedNode.id, { text: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] h-32 resize-none focus:outline-none focus:border-[#6366F1] font-mono"
+                            placeholder="Type text here..."
+                          />
+                        </label>
+                      )}
+
+                      {/* Date Format Editor */}
+                      {selectedNode.data.nodeType === 'D' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Date Format</span>
+                          <input
+                            type="text"
+                            value={(selectedNode.data.format as string) || '%Y-%m-%d'}
+                            onChange={(e) => updateNodeData(selectedNode.id, { format: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#6366F1] font-mono"
+                            placeholder="%Y-%m-%d"
+                          />
+                          <p className="text-[11px] text-[#71717A]">Examples: %Y-%m-%d, %H:%M</p>
+                        </label>
+                      )}
+
+                      {/* Shell Command Editor */}
+                      {selectedNode.data.nodeType === '$' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Shell Command</span>
+                          <input
+                            type="text"
+                            value={(selectedNode.data.cmd as string) || ''}
+                            onChange={(e) => updateNodeData(selectedNode.id, { cmd: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#6366F1] font-mono"
+                            placeholder="echo 'hello'"
+                          />
+                        </label>
+                      )}
+
+                      {/* Form Field Editor */}
+                      {selectedNode.data.nodeType === 'F' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Field Title</span>
+                          <input
+                            type="text"
+                            value={(selectedNode.data.title as string) || ''}
+                            onChange={(e) => updateNodeData(selectedNode.id, { title: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#6366F1]"
+                            placeholder="User Input"
+                          />
+                        </label>
+                      )}
+
+                      {/* Random Choices Editor */}
+                      {selectedNode.data.nodeType === '?' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Choices (comma separated)</span>
+                          <textarea
+                            value={(selectedNode.data.choices as string) || ''}
+                            onChange={(e) => updateNodeData(selectedNode.id, { choices: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] h-24 resize-none focus:outline-none focus:border-[#6366F1]"
+                            placeholder="Choice 1, Choice 2, Choice 3"
+                          />
+                        </label>
+                      )}
+
+                      {/* Python Script Editor */}
+                      {selectedNode.data.nodeType === '#' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Script Path / Name</span>
+                          <input
+                            type="text"
+                            value={(selectedNode.data.path as string) || ''}
+                            onChange={(e) => updateNodeData(selectedNode.id, { path: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#6366F1]"
+                            placeholder="script.py"
+                          />
+                        </label>
+                      )}
+
+                      {/* Concat Editor */}
+                      {selectedNode.data.nodeType === '&' && (
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Concat String</span>
+                          <input
+                            type="text"
+                            value={(selectedNode.data.echo as string) || ''}
+                            onChange={(e) => updateNodeData(selectedNode.id, { echo: e.target.value })}
+                            className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#6366F1] font-mono"
+                            placeholder="First {{name}} Last"
+                          />
+                        </label>
+                      )}
+
+                      <div className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg p-3 mt-4 opacity-50">
+                        <span className="text-[11px] text-[#71717A] uppercase font-bold tracking-wider">Node Debug</span>
+                        <pre className="text-[10px] text-[#D4D4D8] mt-1 whitespace-pre-wrap font-mono">
+                          ID: {selectedNode.id}
+                        </pre>
+                      </div>
                     </div>
                   )}
                 </div>

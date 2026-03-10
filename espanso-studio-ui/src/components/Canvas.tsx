@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -10,6 +10,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useStore } from '../store/useStore';
 import { CustomNode } from './CustomNode';
+import { useWindowSize } from '../hooks/useWindowSize';
 
 const nodeTypes = {
   customNode: CustomNode,
@@ -18,7 +19,15 @@ const nodeTypes = {
 export const Canvas = () => {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode } = useStore();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { width, height } = useWindowSize();
+
+  useEffect(() => {
+    const to = setTimeout(() => {
+      fitView({ duration: 400 });
+    }, 50);
+    return () => clearTimeout(to);
+  }, [width, height, fitView]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();

@@ -45,7 +45,7 @@ export const QuickEditor = () => {
       <EditorHeader />
 
       <div className="flex-1 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-5xl px-6 md:px-12 xl:px-20 py-10 mt-8 flex flex-col gap-8">
+        <div className="w-full max-w-5xl px-[5%] md:px-[8%] xl:px-[10%] pt-12 pb-10 flex flex-col gap-8">
           
           {/* Editor Area */}
         <div className="bg-[#121214] border border-[#27272A] rounded-2xl p-10 shadow-sm flex flex-col gap-6">
@@ -153,7 +153,20 @@ export const QuickEditor = () => {
                     </label>
                   )}
 
-                  {['clipboard', 'form'].includes(ext.type) && (
+                  {ext.type === 'form' && (
+                    <label className="flex flex-col gap-2">
+                       <span className="text-[12px] text-[#A1A1AA] font-semibold">Field Title / Prompt</span>
+                       <input 
+                         type="text" 
+                         value={ext.params.title || ''} 
+                         onChange={(e) => updateVariable(ext.id, 'title', e.target.value)} 
+                         className="bg-[#121214] border border-[#3F3F46] rounded-md px-3 py-2 text-[14px] text-[#F4F4F5] focus:border-[#6366F1] outline-none" 
+                         placeholder="Enter you name"
+                       />
+                    </label>
+                  )}
+
+                  {['clipboard'].includes(ext.type) && (
                      <p className="text-[13px] text-[#71717A] italic">No advanced configuration required for this type.</p>
                   )}
                 </div>

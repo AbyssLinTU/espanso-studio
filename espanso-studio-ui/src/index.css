@@ -16,11 +16,8 @@
   --color-text-secondary: #A1A1AA;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Tailwind 4 Preflight handles resets automatically */
+
 
 html, body, #root {
   height: 100%;
@@ -31,17 +28,11 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
-/* User preference: minimum padding for plain text elements to improve readability,
-   but STRICTLY EXCLUDING buttons, inputs, and flex containers. */
-p:not(button p):not(.react-flow p), 
-span:not(button span):not(h1 span):not(.react-flow span), 
-h1, h2, h3, h4, h5, h6, li, button, a {
-  padding: 3px;
-}
-button{
-  padding: 4px;
+/* Clean global resets */
+button {
   cursor: pointer;
 }
+
 /* ═══ React Flow overrides ═══ */
 .react-flow { background-color: var(--color-bg-canvas) !important; }
 .react-flow__attribution { display: none !important; }
@@ -78,4 +69,16 @@ button{
   color: var(--color-text-secondary);
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* ═══ Blueprint Animations ═══ */
+@keyframes flow-anim {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+.react-flow__edge-path {
+  stroke-dasharray: 4 4;
+  animation: flow-anim 1s linear infinite;
+  transition: stroke 0.2s ease;
 }

@@ -32,7 +32,7 @@ export interface TriggerOptions {
 export interface Variable {
   id: string;
   name: string;
-  type: 'date' | 'shell' | 'clipboard' | 'form' | 'random';
+  type: 'date' | 'shell' | 'clipboard' | 'form' | 'random' | 'script' | 'echo';
   params: Record<string, string>;
 }
 
@@ -86,6 +86,9 @@ interface AppState {
   removeVariable: (id: string) => void;
   reconcileVariables: () => void;
   setParserError: (e: string | null) => void;
+  setPreviewCollapsed: (val: boolean) => void;
+  setNodesCollapsed: (val: boolean) => void;
+  setPropsCollapsed: (val: boolean) => void;
   togglePreview: () => void;
   toggleNodes: () => void;
   toggleProps: () => void;
@@ -104,6 +107,7 @@ interface AppState {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   addNode: (type: string, position: { x: number; y: number }, label?: string) => void;
+  updateNodeData: (id: string, newData: any) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -288,6 +292,9 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   setParserError: (e) => set({ parserError: e }),
+  setPreviewCollapsed: (val) => set({ previewCollapsed: val }),
+  setNodesCollapsed: (val) => set({ nodesCollapsed: val }),
+  setPropsCollapsed: (val) => set({ propsCollapsed: val }),
   togglePreview: () => set((s) => ({ previewCollapsed: !s.previewCollapsed })),
   toggleNodes: () => set((s) => ({ nodesCollapsed: !s.nodesCollapsed })),
   toggleProps: () => set((s) => ({ propsCollapsed: !s.propsCollapsed })),
@@ -312,6 +319,17 @@ export const useStore = create<AppState>((set, get) => ({
     // Deselect all others when adding new
     const currentNodes = get().nodes.map(n => ({ ...n, selected: false }));
     set({ nodes: [...currentNodes, newNode] });
+  },
+  updateNodeData: (id, newData) => {
+    const s = get();
+    const newNodes = s.nodes.map(n => 
+      n.id === id ? { ...n, data: { ...n.data, ...newData } } : n
+    );
+    set({ nodes: newNodes });
+    // Trigger sync after data update
+    if (s.editorMode === 'blueprint') {
+      get().syncBlueprintToQuick();
+    }
   },
 
   syncQuickToBlueprint: () => {
@@ -349,6 +367,8 @@ export const useStore = create<AppState>((set, get) => ({
           else if (varConfig.type === 'clipboard') { nodeType = 'C'; label = 'Clipboard'; }
           else if (varConfig.type === 'form') { nodeType = 'F'; label = 'Form Input'; }
           else if (varConfig.type === 'random') { nodeType = '?'; label = 'Random Pick'; }
+          else if (varConfig.type === 'script') { nodeType = '#'; label = 'Python Script'; }
+          else if (varConfig.type === 'echo') { nodeType = '&'; label = 'Concat'; }
         } else {
           nodeType = 'T'; label = `Var: ${varName}`; 
         }
@@ -358,7 +378,16 @@ export const useStore = create<AppState>((set, get) => ({
         id: `node-${Date.now()}-${index}`,
         type: 'customNode',
         position: { x: currentX, y: 150 },
-        data: { label, nodeType, originalText: token },
+        data: { 
+          label, 
+          nodeType, 
+          originalText: token,
+          // Restore parameters from existing variables array
+          varName: isVariable ? token.slice(2, -2).trim() : undefined,
+          ...(isVariable ? (get().variables.find(v => v.name === token.slice(2, -2).trim())?.params || {}) : {}),
+          // For Text Output nodes, the text is the token itself
+          ...(nodeType === 'T' && !isVariable ? { text: token } : {})
+        },
         selected: false,
       };
 
@@ -378,41 +407,65 @@ export const useStore = create<AppState>((set, get) => ({
 
   syncBlueprintToQuick: () => {
     const { nodes, edges } = get();
-    const triggerNode = nodes.find(n => n.data.nodeType === 'trigger') || nodes[0];
+    const triggerNode = nodes.find(n => n.data.nodeType === 'trigger');
     
-    if (!triggerNode) return; // Empy graph or no starting point
+    if (!triggerNode) return;
     
-    // Attempt to pull trigger text back (if user modified it in property panel)
-    if (triggerNode.data.nodeType === 'trigger' && triggerNode.data.label !== ':keyword' && triggerNode.data.label !== 'Trigger') {
+    // 1. Update Trigger Text
+    if (triggerNode.data.label && triggerNode.data.label !== 'Trigger') {
       set({ triggerText: triggerNode.data.label as string });
     }
 
     let compiledText = '';
     let currentId = triggerNode.id;
     let visited = new Set<string>();
+    const newVars: Variable[] = [];
 
+    // Simple linear traversal for now (Concatenation pattern)
     while (currentId) {
-      if (visited.has(currentId)) break; // Circular loop guard
+      if (visited.has(currentId)) break;
       visited.add(currentId);
 
-      // Follow outgoing edge
       const edge = edges.find(e => e.source === currentId);
-      if (!edge) break; // Trailing node, done
+      if (!edge) break;
 
       const nextNode = nodes.find(n => n.id === edge.target);
       if (!nextNode) break;
 
-      // If we saved the original snippet in data prop, use it. Otherwise guess from nodeType.
-      if (nextNode.data.originalText) {
-        compiledText += nextNode.data.originalText;
+      const nType = nextNode.data.nodeType;
+      const nData = nextNode.data;
+
+      if (nType === 'T') {
+        compiledText += (nData.text || '');
       } else {
-        compiledText += nextNode.data.label || '';
+        // Variable nodes
+        const varName = (nData.varName as string) || `var_${nextNode.id.split('-').pop()}`;
+        compiledText += `{{${varName}}}`;
+
+        // Map node properties to Espanso variable types
+        let varType: Variable['type'] = 'date';
+        let params: Record<string, string> = {};
+
+        if (nType === 'D') { varType = 'date'; params = { format: (nData.format as string) || '%Y-%m-%d' }; }
+        else if (nType === '$') { varType = 'shell'; params = { cmd: (nData.cmd as string) || 'echo "hello"' }; }
+        else if (nType === 'C') { varType = 'clipboard'; params = {}; }
+        else if (nType === 'F') { varType = 'form'; params = { title: (nData.title as string) || 'Input' }; }
+        else if (nType === '?') { varType = 'random'; params = { choices: (nData.choices as string) || 'A,B,C' }; }
+        else if (nType === '#') { varType = 'script'; params = { path: (nData.path as string) || 'script.py' }; }
+        else if (nType === '&') { varType = 'echo'; params = { echo: (nData.echo as string) || 'concat' }; }
+
+        newVars.push({
+          id: nextNode.id,
+          name: varName,
+          type: varType,
+          params
+        });
       }
 
       currentId = nextNode.id;
     }
 
-    set({ replaceText: compiledText });
+    set({ replaceText: compiledText, variables: newVars });
   },
 
 }));

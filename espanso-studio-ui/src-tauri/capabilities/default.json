@@ -12,16 +12,12 @@
       "allow": [
         {
           "name": "espanso",
-          "cmd": "espanso",
-          "sidecar": false
+          "cmd": "espanso"
         }
       ]
     },
-    {
-      "identifier": "fs:allow-read-text-file"
-    },
-    {
-      "identifier": "fs:allow-write-text-file"
-    }
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "shell:allow-open"
   ]
 }

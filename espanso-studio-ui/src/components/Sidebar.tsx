@@ -2,7 +2,7 @@ import { useStore } from '../store/useStore';
 import { FileText, Settings, RefreshCw } from 'lucide-react';
 
 export const Sidebar = () => {
-  const { fileList, activeFile, setActiveFile, currentMode, setMode } = useStore();
+  const { fileList, activeFile, setActiveFile, editorMode, setEditorMode } = useStore();
 
   const handleRestart = async () => {
     try {
@@ -29,9 +29,9 @@ export const Sidebar = () => {
       <div className="px-4 pb-4">
         <div className="flex bg-[#0A0A0C] rounded-lg p-[3px] gap-[2px]">
           <button
-            onClick={() => setMode('quick')}
+            onClick={() => setEditorMode('quick')}
             className={`flex-1 py-[6px] text-[11px] font-semibold rounded-md transition-all duration-150 ${
-              currentMode === 'quick'
+              editorMode === 'quick'
                 ? 'bg-[#4F46E5] text-white shadow-md shadow-indigo-500/20'
                 : 'text-[#6B6B7A] hover:text-[#9A9AA8]'
             }`}
@@ -39,9 +39,9 @@ export const Sidebar = () => {
             Quick Mode
           </button>
           <button
-            onClick={() => setMode('blueprint')}
+            onClick={() => setEditorMode('blueprint')}
             className={`flex-1 py-[6px] text-[11px] font-semibold rounded-md transition-all duration-150 ${
-              currentMode === 'blueprint'
+              editorMode === 'blueprint'
                 ? 'bg-[#4F46E5] text-white shadow-md shadow-indigo-500/20'
                 : 'text-[#6B6B7A] hover:text-[#9A9AA8]'
             }`}
