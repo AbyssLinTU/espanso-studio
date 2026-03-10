@@ -8,6 +8,7 @@ const QUICK_ADD_BUTTONS = [
   { key: 'C', baseName: 'clipboard', label: 'Clipboard', type: 'clipboard' as const },
   { key: 'F', baseName: 'form', label: 'Form', type: 'form' as const },
   { key: '?', baseName: 'random', label: 'Random', type: 'random' as const },
+  { key: '#', baseName: 'python', label: 'Python', type: 'script' as const },
 ];
 
 export const QuickEditor = () => {
@@ -38,6 +39,7 @@ export const QuickEditor = () => {
     else if (btn.type === 'clipboard') addVariable({ id: varId, name: varName, type: 'clipboard', params: {} });
     else if (btn.type === 'random') addVariable({ id: varId, name: varName, type: 'random', params: { choices: 'A,B,C' } });
     else if (btn.type === 'form') addVariable({ id: varId, name: varName, type: 'form', params: { title: 'User Input' } });
+    else if (btn.type === 'script') addVariable({ id: varId, name: varName, type: 'shell', params: { cmd: 'python "script.py"' } });
   };
 
   return (
@@ -127,7 +129,7 @@ export const QuickEditor = () => {
                     </label>
                   )}
 
-                  {ext.type === 'shell' && (
+                  {(ext.type === 'shell' && !ext.params.cmd?.startsWith('python')) && (
                     <label className="flex flex-col gap-2">
                       <span className="text-[12px] text-[#A1A1AA] font-semibold">Shell Command</span>
                       <input 
@@ -153,7 +155,7 @@ export const QuickEditor = () => {
                     </label>
                   )}
 
-                  {ext.type === 'form' && (
+                   {ext.type === 'form' && (
                     <label className="flex flex-col gap-2">
                        <span className="text-[12px] text-[#A1A1AA] font-semibold">Field Title / Prompt</span>
                        <input 
@@ -163,6 +165,33 @@ export const QuickEditor = () => {
                          className="bg-[#121214] border border-[#3F3F46] rounded-md px-3 py-2 text-[14px] text-[#F4F4F5] focus:border-[#6366F1] outline-none" 
                          placeholder="Enter you name"
                        />
+                    </label>
+                  )}
+
+                  {(ext.type === 'shell' && ext.params.cmd?.startsWith('python')) && (
+                    <label className="flex flex-col gap-2">
+                      <span className="text-[12px] text-[#A1A1AA] font-semibold">Python Script Command</span>
+                      <input 
+                        type="text" 
+                        value={ext.params.cmd || ''} 
+                        onChange={(e) => updateVariable(ext.id, 'cmd', e.target.value)} 
+                        className="bg-[#121214] border border-[#3F3F46] rounded-md px-3 py-2 text-[14px] text-[#F4F4F5] font-mono focus:border-[#6366F1] outline-none" 
+                        placeholder='python "script.py"'
+                      />
+                    </label>
+                  )}
+
+                  {ext.type === 'script' && (
+                    <label className="flex flex-col gap-2">
+                      <span className="text-[12px] text-[#A1A1AA] font-semibold">Script Path (Legacy)</span>
+                      <input 
+                        type="text" 
+                        value={ext.params.path || ''} 
+                        onChange={(e) => updateVariable(ext.id, 'path', e.target.value)} 
+                        className="bg-[#121214] border border-[#3F3F46] rounded-md px-3 py-2 text-[14px] text-[#F4F4F5] font-mono focus:border-[#6366F1] outline-none" 
+                        placeholder="path/to/script"
+                      />
+                      <p className="text-[10px] text-[#F59E0B]">Note: For Python scripts, use the Python button for better compatibility.</p>
                     </label>
                   )}
 

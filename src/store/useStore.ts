@@ -116,13 +116,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   activeFile: null,
   fileList: [],
-  macros: [
-    { trigger: ':br', replace: 'Best regards,\nJohn Doe\nSoftware Engineer' },
-    { trigger: ':zoom', replace: 'Here is the link to our Zoom meeting: https://zoom.us/j/1234567890\nPasscode: 123456' },
-    { trigger: ':email', replace: 'john.doe@example.com' },
-    { trigger: ':address', replace: '123 Tech Boulevard\nSuite 400\nSan Francisco, CA 94105' },
-    { trigger: ':lorem', replace: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' }
-  ],
+  macros: [],
 
   originalTriggerText: null,
   triggerText: '',
@@ -363,7 +357,16 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (varConfig) {
           if (varConfig.type === 'date') { nodeType = 'D'; label = 'Date Gen'; }
-          else if (varConfig.type === 'shell') { nodeType = '$'; label = 'Shell Cmd'; }
+          else if (varConfig.type === 'shell') { 
+            // Detect if it was a Python script disguised as a shell command
+            if (varConfig.params.cmd?.startsWith('python "') || varConfig.params.cmd?.startsWith('python ')) {
+              nodeType = '#';
+              label = 'Python Script';
+            } else {
+              nodeType = '$';
+              label = 'Shell Cmd';
+            }
+          }
           else if (varConfig.type === 'clipboard') { nodeType = 'C'; label = 'Clipboard'; }
           else if (varConfig.type === 'form') { nodeType = 'F'; label = 'Form Input'; }
           else if (varConfig.type === 'random') { nodeType = '?'; label = 'Random Pick'; }
@@ -374,22 +377,28 @@ export const useStore = create<AppState>((set, get) => ({
         }
       }
 
-      const newNode: Node = {
-        id: `node-${Date.now()}-${index}`,
-        type: 'customNode',
-        position: { x: currentX, y: 150 },
-        data: { 
-          label, 
-          nodeType, 
-          originalText: token,
-          // Restore parameters from existing variables array
-          varName: isVariable ? token.slice(2, -2).trim() : undefined,
-          ...(isVariable ? (get().variables.find(v => v.name === token.slice(2, -2).trim())?.params || {}) : {}),
-          // For Text Output nodes, the text is the token itself
-          ...(nodeType === 'T' && !isVariable ? { text: token } : {})
-        },
-        selected: false,
-      };
+        const newNode: Node = {
+          id: `node-${Date.now()}-${index}`,
+          type: 'customNode',
+          position: { x: currentX, y: 150 },
+          data: { 
+            label, 
+            nodeType, 
+            originalText: token,
+            // Restore parameters from existing variables array
+            varName: isVariable ? token.slice(2, -2).trim() : undefined,
+            ...(isVariable ? (get().variables.find(v => v.name === token.slice(2, -2).trim())?.params || {}) : {}),
+            // Special handling for legacy Python scripts or shell-python scripts
+            ...(nodeType === '#' && isVariable ? { 
+              path: get().variables.find(v => v.name === token.slice(2, -2).trim())?.params.path || 
+                    get().variables.find(v => v.name === token.slice(2, -2).trim())?.params.cmd?.match(/python\s+"?([^"]+)"?/)?.[1] || 
+                    '' 
+            } : {}),
+            // For Text Output nodes, the text is the token itself
+            ...(nodeType === 'T' && !isVariable ? { text: token } : {})
+          },
+          selected: false,
+        };
 
       newNodes.push(newNode);
       newEdges.push({
@@ -451,7 +460,12 @@ export const useStore = create<AppState>((set, get) => ({
         else if (nType === 'C') { varType = 'clipboard'; params = {}; }
         else if (nType === 'F') { varType = 'form'; params = { title: (nData.title as string) || 'Input' }; }
         else if (nType === '?') { varType = 'random'; params = { choices: (nData.choices as string) || 'A,B,C' }; }
-        else if (nType === '#') { varType = 'script'; params = { path: (nData.path as string) || 'script.py' }; }
+        else if (nType === '#') { 
+          // Map to shell for better Windows support
+          varType = 'shell'; 
+          const cleanPath = (nData.path as string) || 'script.py';
+          params = { cmd: `python "${cleanPath}"` }; 
+        }
         else if (nType === '&') { varType = 'echo'; params = { echo: (nData.echo as string) || 'concat' }; }
 
         newVars.push({
