@@ -77,11 +77,48 @@ fn restart_espanso() -> Result<(), String> {
 
 #[tauri::command]
 fn check_espanso_installed() -> bool {
-    let output = std::process::Command::new("espanso")
-        .arg("--version")
+    // 1. Try running the command via shell
+    #[cfg(target_os = "windows")]
+    let output = std::process::Command::new("cmd")
+        .args(["/C", "espanso --version"])
         .output();
+
+    #[cfg(not(target_os = "windows"))]
+    let output = std::process::Command::new("sh")
+        .args(["-c", "espanso --version"])
+        .output();
+
+    if output.is_ok() && output.unwrap().status.success() {
+        return true;
+    }
+
+    // 2. On Windows, check common installation path
+    #[cfg(target_os = "windows")]
+    {
+        let common_path = "C:\\Program Files\\espanso\\espanso.exe";
+        if std::path::Path::new(common_path).exists() {
+            return true;
+        }
+
+        let local_appdata = std::env::var("LOCALAPPDATA").unwrap_or_default();
+        if !local_appdata.is_empty() {
+             let user_path = std::path::Path::new(&local_appdata).join("espanso\\espanso.exe");
+             if user_path.exists() {
+                 return true;
+             }
+        }
+    }
+
+    // 3. Last fallback: Check if the config folder exists in AppData
+    let appdata = std::env::var("APPDATA").unwrap_or_default();
+    if !appdata.is_empty() {
+        let config_path = std::path::Path::new(&appdata).join("espanso");
+        if config_path.exists() {
+            return true;
+        }
+    }
     
-    output.is_ok()
+    false
 }
 
 #[tauri::command]
