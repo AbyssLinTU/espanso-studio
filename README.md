@@ -1,9 +1,9 @@
 <div align="center">
 
-# ⚡ Espanso Studio Pro
+# ⚡ Espanso Studio Pro `v1.0.0`
 
 > **The Ultimate Visual Environment for Espanso.**  
-> Built with **Rust (Tauri)** and **React (Vite)** for maximum performance and a premium desktop experience.
+> Built with **Rust (Tauri)** and **React (Vite 6)** for maximum performance and a premium desktop experience.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows%2011-0078D4?style=for-the-badge&logo=windows" alt="Platform">
@@ -22,72 +22,80 @@
 
 ---
 
-## 🌟 Evolution: From Python to Rust + React
+## 🚀 The 1.0.0 Revolution
 
-We’ve migrated the core engine to **Rust** to provide a blazing-fast, secure, and native desktop experience. The UI has been completely rebuilt using **React 19** and **Vite**, featuring immersive glassmorphism, fluid animations, and a seamless "Blueprint" visual logic system.
-
-### Why the change?
-- **Performance**: Zero-lag interface even with massive YAML files.
-- **Safety**: Rust's memory safety and Tauri's hardened sandbox.
-- **UX**: Modern web technologies allow for a level of design polish previously impossible.
+We've reached a stable milestone! Espanso Studio has migrated from a legacy Python bridge to a **native Rust engine** using Tauri. This ensures high-speed execution, minimal memory footprint, and native security.
 
 ## ✨ Key Features
 
 | Feature | Description |
 | :--- | :--- |
-| **🎨 Blueprint Mode** | A visual nodes editor to build complex text expansion logic without writing a single line of YAML. |
+| **🎨 Blueprint Mode** | A visual nodes editor to build complex text expansion logic (Variable chaining). |
 | **⚡ Quick Mode** | Speed-oriented editor for simple replacements with instant variable injection. |
 | **👁️ Live Preview** | Real-time formatted YAML generation as you construct your logic. |
 | **🔄 Hybrid Sync** | Seamlessly switch between Blueprint and Quick modes with bi-directional synchronization. |
-| **📦 Dynamic Variables** | Built-in support for Date snippets, Shell commands, Clipboard injection, and more. |
 | **🛡️ Auto-Restart** | Instant propagation of changes to the Espanso engine directly from the UI. |
 
 ## 🛠️ Tech Stack
 
-- **Core Engine:** [Rust](https://www.rust-lang.org/)
-- **Frontend:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Bundler:** [Vite](https://vitejs.dev/)
-- **Desktop Framework:** [Tauri 2.0](https://tauri.app/)
-- **Styling:** Tailwind CSS + Framer Motion
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
-- **Node Editor:** [@xyflow/react](https://reactflow.dev/) (React Flow)
+- **Backend:** [Rust](https://www.rust-lang.org/) + [Tauri 2.0](https://tauri.app/)
+- **Frontend:** [React 19](https://react.dev/) + [Vite 6](https://vitejs.dev/)
+- **State:** [Zustand](https://github.com/pmndrs/zustand)
+- **Visuals:** [React Flow](https://reactflow.dev/) (xyflow) + Framer Motion
+- **Styling:** Tailwind CSS (Glassmorphism & Dark Mode)
 
-## 🚀 Getting Started
+## 📖 Usage Instructions
+
+### 1. Home Dashboard
+When you launch the app, you'll see all your existing matches from your `base.yml`. 
+- **Search**: Use the top search bar to find triggers quickly.
+- **Edit**: Click the pencil icon to modify a macro.
+- **Delete**: Click the trash icon to remove a snippet permanently.
+
+### 2. Creating Macros (Quick Mode)
+Click the **"+"** icon in the sidebar.
+1. Enter a **Trigger** (e.g., `:id`).
+2. Type your **Replacement** text in the main area.
+3. Use **Quick Add** buttons to insert dynamic variables (Date, Clipboard, Shell).
+4. Configure variable settings in the cards that appear below.
+5. Hit **"Save"** in the top bar.
+
+### 3. Blueprint Editor (Visual Mode)
+Toggle to **Blueprint** in the header for advanced logic.
+- **Nodes**: Drag and drop output types (Text, Shell, Date) from the left palette.
+- **Connections**: Connect the "Trigger" node to various output nodes to chain text together.
+- **Properties**: Select a node to edit its specific values on the right sidebar.
+
+### 4. Live Preview
+The right-hand panel shows the exact YAML code that will be written to your configuration. You can toggle this panel with the expand/collapse handle.
+
+---
+
+## 🛠️ Development & Build
 
 ### Prerequisites
 1. Installed **[Node.js](https://nodejs.org/)** (LTS)
 2. Installed **[Rust Toolchain](https://rustup.rs/)**
 3. Installed and running **[Espanso](https://espanso.org/)**
 
-### Installation
-
-1. **Clone the repository:**
+### Steps
+1. **Clone & Install:**
    ```bash
    git clone https://github.com/AbyssLinTU/espanso-studio.git
    cd espanso-studio
-   ```
-
-2. **Install dependencies:**
-   ```bash
    npm install
    ```
 
-3. **Run in Development Mode:**
+2. **Run Dev:**
    ```bash
    npm run tauri dev
    ```
 
-4. **Build Production Application:**
+3. **Build:**
    ```bash
-   npm run build
    npm run tauri build
    ```
 
-## 🤝 Community & Contribution
-We welcome contributions! Whether it's adding new node types, improving the Tauri integration, or enhancing the design.
-
-Please see our [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon for Rust version) for guidelines.
-
 ---
 
-<p align="center">Built with ❤️ for productivity lovers by AbyssLinTU.</p>
+<p align="center">Made with ❤️ for productivity lovers by AbyssLinTU.</p>

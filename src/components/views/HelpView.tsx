@@ -66,11 +66,11 @@ export const HelpView = () => {
             <div className="w-11 h-11 rounded-xl bg-[#6366F1]/10 flex items-center justify-center text-[#818CF8] text-[16px] font-extrabold">ES</div>
             <div>
               <h1 className="text-[28px] font-extrabold text-[#F4F4F5] tracking-tight leading-none">Espanso Studio Pro</h1>
-              <p className="text-[13px] text-[#71717A]">Руководство пользователя</p>
+              <p className="text-[13px] text-[#71717A]">User Guide</p>
             </div>
           </div>
           <p className="text-[15px] text-[#A1A1AA] leading-relaxed">
-            Espanso Studio Pro — это визуальный редактор для создания макросов Espanso. Вместо того чтобы вручную редактировать YAML, вы управляете макросами через удобный интерфейс, а приложение само генерирует и сохраняет нужный формат файла.
+            Espanso Studio Pro is a visual editor for creating Espanso macros. Instead of manually editing YAML configuration files, you manage macros through a friendly interface, while the application automatically generates and persists the correct file format.
           </p>
         </div>
 
@@ -80,18 +80,18 @@ export const HelpView = () => {
         <Section
           icon={<BookOpen className="w-4 h-4 text-[#818CF8]" />}
           color="bg-[#6366F1]/10"
-          title="Как это работает"
-          description="Основная концепция"
+          title="How it Works"
+          description="Core Concept"
         >
           <p className="text-[14px] text-[#A1A1AA] leading-relaxed">
-            Espanso — это системная программа, которая следит за вашим вводом и автоматически заменяет короткие триггеры на заранее написанный текст. Espanso Studio Pro управляет конфигурационными файлами Espanso визуально.
+            Espanso is a system-wide text expander that monitors your keyboard input and automatically replaces short triggers with pre-defined text. Espanso Studio Pro helps you manage these configurations visually.
           </p>
           <div className="flex items-center gap-3 bg-[#0F0F11] rounded-xl px-4 py-3 border border-[#2D2D30]">
             <Code text=":sig" />
             <ChevronRight className="w-4 h-4 text-[#52525B] shrink-0" />
-            <span className="text-[14px] text-[#A1A1AA]">С уважением, Иван Иванов</span>
+            <span className="text-[14px] text-[#A1A1AA]">Best regards, John Doe</span>
           </div>
-          <p className="text-[13px] text-[#71717A]">Как только вы вводите любой триггер в любом приложении — Espanso мгновенно заменяет его на нужный текст.</p>
+          <p className="text-[13px] text-[#71717A]">As soon as you type any trigger in any application — Espanso instantly replaces it with the designated text.</p>
         </Section>
 
         <div className="w-full h-px bg-[#1E1E21]" />
@@ -100,13 +100,13 @@ export const HelpView = () => {
         <Section
           icon={<Layers className="w-4 h-4 text-[#10B981]" />}
           color="bg-[#10B981]/10"
-          title="Навигация по интерфейсу"
-          description="Боковая панель (слева)"
+          title="Interface Navigation"
+          description="Icon Sidebar (Left)"
         >
           <div className="flex flex-col gap-2">
-            <NavItem icon="🏠" label="Home" text="Список всех ваших макросов. Здесь можно редактировать и удалять существующие." />
-            <NavItem icon="＋" label="New Macro" text="Создать новый макрос с чистого листа. Форма заполняется пустой." />
-            <NavItem icon="↺" label="Restart" text="Перезапустить процесс Espanso, чтобы он подхватил изменения конфигурации вручную." />
+            <NavItem icon="🏠" label="Home" text="View all your matches. Search, edit, or delete existing macros here." />
+            <NavItem icon="＋" label="New Macro" text="Create a new macro from scratch. Opens the editor with empty fields." />
+            <NavItem icon="↺" label="Restart" text="Manually restart the Espanso process to ensure it picks up the latest configuration changes." />
           </div>
         </Section>
 
@@ -116,14 +116,14 @@ export const HelpView = () => {
         <Section
           icon={<Zap className="w-4 h-4 text-[#F59E0B]" />}
           color="bg-[#F59E0B]/10"
-          title="Создание макроса"
-          description="Quick Mode — простой текст"
+          title="Creating a Macro"
+          description="Quick Mode — Simple Text"
         >
-          <Step n={1} title="Нажмите «+» в боковой панели" text="Откроется редактор с пустыми полями. В заголовке будет написано «Create Macro»." />
-          <Step n={2} title="Введите триггер" text="Это ключевое слово, которое запустит замену. Рекомендуемый формат: начинать с «:», например :email, :sig, :дата." />
-          <Step n={3} title="Введите текст замены" text="В большом текстовом поле напишите то, чем будет заменён триггер. Это может быть несколько строк." />
-          <Step n={4} title="Нажмите «Save»" text="Макрос сохраняется в памяти, записывается в base.yml и Espanso тут же перезапускается. Макрос готов к использованию!" />
-          <InfoCard title="💡 Горячая клавиша" text={`Ctrl + S вызывает принудительное сохранение всех существующих макросов на диск, даже с экрана Home.`} />
+          <Step n={1} title="Click '+' in the Sidebar" text="This opens the editor. The header will display 'Create Macro' for new items." />
+          <Step n={2} title="Enter a Trigger" text="This is the keyword that activates the expansion. Recommended format: start with a colon, e.g., :email, :sig, :date." />
+          <Step n={3} title="Enter Replacement Text" text="Type the text that should replace the trigger. It can span multiple lines." />
+          <Step n={4} title="Click 'Save'" text="The macro is saved to memory, written to base.yml, and Espanso is automatically restarted. It's ready to use!" />
+          <InfoCard title="💡 Hotkey" text={`Ctrl + S forces a save of all current state to disk, accessible even from the Home screen.`} />
         </Section>
 
         <div className="w-full h-px bg-[#1E1E21]" />
@@ -132,24 +132,24 @@ export const HelpView = () => {
         <Section
           icon={<Pencil className="w-4 h-4 text-[#6366F1]" />}
           color="bg-[#6366F1]/10"
-          title="Настройки триггера"
-          description="Word / Case / Prop — что это значит?"
+          title="Trigger Settings"
+          description="Word / Case / Prop — what do they mean?"
         >
           <div className="flex flex-col gap-2">
             <InfoCard
               accent="bg-[#6366F1]/10 border-[#6366F1]/30"
-              title="Word — Граница слова"
-              text="Триггер срабатывает только если перед ним стоит пробел или начало строки. Включайте, чтобы :it не срабатывало внутри слова «bitter». Также важно, чтобы пробел (или другой разделитель) был и после триггера."
+              title="Word — Word Boundary"
+              text="The trigger only activates if preceded by a space or the start of a line. Enable this so ':it' doesn't fire inside the word 'bitter'. It also requires a separator (like a space) after the trigger."
             />
             <InfoCard
               accent="bg-[#10B981]/10 border-[#10B981]/30"
-              title="Case — Чувствительность к регистру"
-              text="По умолчанию Espanso не различает :Hello и :hello. Включите эту опцию, если регистр триггера важен."
+              title="Case — Case Sensitivity"
+              text="By default, Espanso treats ':Hello' and ':hello' the same. Enable this option if the specific casing of your trigger matters."
             />
             <InfoCard
               accent="bg-[#F59E0B]/10 border-[#F59E0B]/30"
-              title="Prop — Propagate Case (Перенос регистра)"
-              text="Если триггер набран с Заглавной буквы (:Hello), то и замена будет начинаться с заглавной. Удобно для профессиональных подписей."
+              title="Prop — Propagate Case"
+              text="If you type the trigger with a Capital letter (:Hello), the replacement will also start with a capital. Great for professional signatures."
             />
           </div>
         </Section>
@@ -160,19 +160,19 @@ export const HelpView = () => {
         <Section
           icon={<Variable className="w-4 h-4 text-[#A78BFA]" />}
           color="bg-[#8B5CF6]/10"
-          title="Переменные в тексте замены"
-          description="Динамические данные внутри макроса"
+          title="Variables in Replacement Text"
+          description="Dynamic Data inside Macros"
         >
           <p className="text-[14px] text-[#A1A1AA] leading-relaxed">
-            Иногда в тексте нужен динамический контент, например, текущая дата или текст из буфера обмена. Для этого используются переменные.
+            Sometimes you need dynamic content, like the current date or text from your clipboard. For this, we use variables.
           </p>
           <div className="flex flex-col gap-2">
-            <VarItem name="{{date}}" color="text-[#34D399]" title="Дата" text="Подставляет текущую дату. В настройках можно выбрать формат (дд.мм.гггг и т.д.)." />
-            <VarItem name="{{time}}" color="text-[#60A5FA]" title="Время" text="Подставляет текущее время в нужном формате." />
-            <VarItem name="{{clipboard}}" color="text-[#F472B6]" title="Буфер обмена" text="Вставляет содержимое того, что вы скопировали (Ctrl+C) прямо сейчас." />
-            <VarItem name="{{output}}" color="text-[#FBBF24]" title="Shell-команда" text="Выполняет команду в терминале и вставляет результат. Например: echo 'Hello'." />
+            <VarItem name="{{date}}" color="text-[#34D399]" title="Date" text="Inserts the current date. You can choose the format (DD.MM.YYYY, etc.) in settings." />
+            <VarItem name="{{time}}" color="text-[#60A5FA]" title="Time" text="Inserts the current system time in your preferred format." />
+            <VarItem name="{{clipboard}}" color="text-[#F472B6]" title="Clipboard" text="Pastes whatever you currently have copied (Ctrl+C)." />
+            <VarItem name="{{output}}" color="text-[#FBBF24]" title="Shell Command" text="Executes a terminal command and inserts the result. Example: echo 'Hello'." />
           </div>
-          <p className="text-[14px] text-[#71717A] leading-relaxed">Используйте кнопки <span className="text-[#E4E4E7] font-semibold">Quick Add</span> в редакторе, чтобы вставить переменную в текст. Настройте её параметры в карточке снизу. Переменную можно переименовать прямо в карточке — все вхождения в тексте обновятся автоматически.</p>
+          <p className="text-[14px] text-[#71717A] leading-relaxed">Use the <span className="text-[#E4E4E7] font-semibold">Quick Add</span> buttons in the editor to insert a variable. Configure its parameters in the card that appears below. You can rename variables directly in their cards — all instances in the text will update automatically.</p>
         </Section>
 
         <div className="w-full h-px bg-[#1E1E21]" />
@@ -181,19 +181,19 @@ export const HelpView = () => {
         <Section
           icon={<Save className="w-4 h-4 text-[#10B981]" />}
           color="bg-[#10B981]/10"
-          title="Редактирование и удаление"
+          title="Editing & Deleting"
         >
-          <Step n={1} title="На экране Home нажмите значок карандаша (✏️)" text="Макрос откроется в редакторе. Вы можете изменить и триггер, и текст замены — приложение запомнит оригинальное имя и корректно перезапишет его при сохранении." />
-          <Step n={2} title="Нажмите «Save» для применения изменений" text="Измененный макрос заменит старый. Espanso перезапустится автоматически." />
+          <Step n={1} title="Click the Pencil icon (✏️) on Home" text="The macro opens in the editor. You can change the trigger and text — the app remembers the original name and overwrites it correctly on save." />
+          <Step n={2} title="Click 'Save' to apply changes" text="The modified macro replaces the old one, and Espanso restarts automatically." />
           <Step
             n={3}
-            title="Нажмите значок корзины (🗑️) для удаления"
-            text="Макрос немедленно удаляется из списка, файл обновляется на диске и Espanso перезапускается."
+            title="Click the Trash icon (🗑️) to delete"
+            text="The macro is immediately removed from the list, the file is updated on disk, and Espanso restarts."
           />
           <InfoCard
             accent="bg-[#EF4444]/10 border-[#EF4444]/30"
-            title="⚠️ Удаление необратимо"
-            text="После нажатия на корзину макрос не уходит в «Корзину» — он удаляется сразу. Убедитесь в правильности выбора. Резервная копия файла автоматически сохраняется как base.bak."
+            title="⚠️ Deletion is permanent"
+            text="Once you click the trash icon, the macro is deleted immediately. Ensure you want to remove it. A backup of your file is automatically saved as base.bak."
           />
         </Section>
 
@@ -203,14 +203,14 @@ export const HelpView = () => {
         <Section
           icon={<RefreshCw className="w-4 h-4 text-[#FB923C]" />}
           color="bg-[#F97316]/10"
-          title="Советы и хитрости"
+          title="Tips & Tricks"
         >
           <div className="flex flex-col gap-2">
-            <InfoCard title="Форма ввода (Form Variable)" text="Espanso умеет показывать диалог ввода при срабатывании триггера. Используйте переменную типа form в YAML для сложных промптов." />
-            <InfoCard title="Осмысленные имена триггеров" text="Используйте префиксы: :@ для email-адресов, :! для важных шаблонов, :/ для URL. Это поможет не забыть, какой триггер за что отвечает." />
-            <InfoCard title="Backup-файл (.bak)" text="При каждом сохранении приложение создаёт base.bak в папке espanso/match. Если что-то пошло не так — переименуйте .bak обратно в .yml." />
+            <InfoCard title="Form Variables" text="Espanso can show an input dialog when a trigger fires. Use form variables for complex prompts that require user input at runtime." />
+            <InfoCard title="Meaningful Trigger Prefixes" text="Try using prefixes: :@ for emails, :! for important templates, :/ for URLs. This helps organize your snippets mentally." />
+            <InfoCard title="Backup File (.bak)" text="Every time you save, the app creates base.bak in your espanso/match folder. If something goes wrong, rename .bak back to .yml." />
             <div className="flex items-center gap-2 text-[13px] text-[#71717A]">
-              <span>Файл конфигурации находится по адресу:</span>
+              <span>Your configuration file is located at:</span>
               <Code text="%APPDATA%\espanso\match\base.yml" />
             </div>
           </div>
