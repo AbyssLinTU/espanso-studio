@@ -13,6 +13,7 @@ import { EspansoService } from './services/EspansoService';
 import { ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants } from './utils/animations';
+import { InstallModal } from './components/layout/InstallModal';
 
 
 
@@ -31,6 +32,7 @@ function App() {
     edges,
   } = useStore();
   const [ready, setReady] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   // Custom panel resizer (initial 360px, min 280, max 600)
   const { width: previewWidth, startResize, isResizing } = useResize(360, 280, 600);
@@ -44,8 +46,14 @@ function App() {
     }
   }, [windowWidth, previewCollapsed]);
 
-  // Tauri init...
   const fetchFiles = useCallback(async () => {
+    const isInstalled = await EspansoService.checkInstalled();
+    if (!isInstalled) {
+      setShowInstallModal(true);
+      setReady(true);
+      return;
+    }
+
     const files = await EspansoService.listFiles();
     if (files) {
       setFileList(files);
@@ -162,6 +170,11 @@ function App() {
             fontWeight: 600,
           },
         }}
+      />
+
+      <InstallModal 
+        isOpen={showInstallModal} 
+        onClose={() => setShowInstallModal(false)} 
       />
 
       {/* Col 1: Fixed Icon Sidebar */}

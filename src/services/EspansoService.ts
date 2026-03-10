@@ -1,5 +1,4 @@
 import { parseDocument, stringify } from 'yaml';
-import { toast } from 'sonner';
 
 export async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   try {
@@ -26,6 +25,15 @@ export const EspansoService = {
 
   async restart() {
     return await safeInvoke<void>('restart_espanso');
+  },
+
+  async checkInstalled() : Promise<boolean> {
+    const res = await safeInvoke<boolean>('check_espanso_installed');
+    return res === true;
+  },
+
+  async install() {
+    return await safeInvoke<void>('install_espanso');
   },
 
   parseYaml(content: string) {

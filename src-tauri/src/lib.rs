@@ -75,6 +75,30 @@ fn restart_espanso() -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn check_espanso_installed() -> bool {
+    let output = std::process::Command::new("espanso")
+        .arg("--version")
+        .output();
+    
+    output.is_ok()
+}
+
+#[tauri::command]
+async fn install_espanso(app: tauri::AppHandle) -> Result<(), String> {
+    let resource_path = app.path().resolve("resources/espanso-installer.exe", tauri::path::BaseDirectory::Resource)
+        .map_err(|e| format!("Could not find installer: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new(resource_path)
+            .spawn()
+            .map_err(|e| format!("Failed to launch installer: {}", e))?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -95,7 +119,9 @@ pub fn run() {
         list_yaml_files,
         read_file,
         save_file,
-        restart_espanso
+        restart_espanso,
+        check_espanso_installed,
+        install_espanso
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

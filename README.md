@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Espanso Studio Pro `v1.0.0`
+# ⚡ Espanso Studio Pro `v1.0.1`
 
 > **The Ultimate Visual Environment for Espanso.**  
 > Built with **Rust (Tauri)** and **React (Vite 6)** for maximum performance and a premium desktop experience.
@@ -35,6 +35,7 @@ We've reached a stable milestone! Espanso Studio has migrated from a legacy Pyth
 | **👁️ Live Preview** | Real-time formatted YAML generation as you construct your logic. |
 | **🔄 Hybrid Sync** | Seamlessly switch between Blueprint and Quick modes with bi-directional synchronization. |
 | **🛡️ Auto-Restart** | Instant propagation of changes to the Espanso engine directly from the UI. |
+| **📦 Autonomous Onboarding** | Built-in installer support to help new users set up the Espanso engine directly from the app. |
 
 ## 🛠️ Tech Stack
 

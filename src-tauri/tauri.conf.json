@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "EspansoStudio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.abysslintu.espanso-studio",
   "build": {
     "frontendDist": "../dist",
@@ -26,6 +26,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [
+      "resources/*"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
