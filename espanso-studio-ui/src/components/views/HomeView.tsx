@@ -1,7 +1,7 @@
 import { Search, Pencil, Trash2, Hash } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { motion } from 'framer-motion';
-import { containerVariants, itemVariants } from '../utils/animations';
+import { containerVariants, itemVariants } from '../../utils/animations';
 import { useState } from 'react';
 
 export const HomeView = () => {

@@ -8,9 +8,9 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { CustomNode } from './CustomNode';
-import { useWindowSize } from '../hooks/useWindowSize';
+import { useWindowSize } from '../../hooks/useWindowSize';
 
 const nodeTypes = {
   customNode: CustomNode,

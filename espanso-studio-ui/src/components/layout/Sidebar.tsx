@@ -1,13 +1,13 @@
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { FileText, Settings, RefreshCw } from 'lucide-react';
+import { EspansoService } from '../../services/EspansoService';
 
 export const Sidebar = () => {
   const { fileList, activeFile, setActiveFile, editorMode, setEditorMode } = useStore();
 
   const handleRestart = async () => {
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('restart_espanso');
+      await EspansoService.restart();
     } catch (e) {
       console.error(e);
     }

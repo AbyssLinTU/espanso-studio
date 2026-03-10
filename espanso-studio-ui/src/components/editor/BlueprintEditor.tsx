@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Wand2 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { Canvas } from './Canvas';
 import { ReactFlowProvider } from '@xyflow/react';
 import { EditorHeader } from './EditorHeader';
-import { useWindowSize } from '../hooks/useWindowSize';
+import { useWindowSize } from '../../hooks/useWindowSize';
 
 const NODE_PALETTE = [
   { key: 'T', label: 'Text Output' },

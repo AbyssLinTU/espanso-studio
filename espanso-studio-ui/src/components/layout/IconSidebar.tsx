@@ -1,9 +1,10 @@
 import { Home, Plus, RefreshCw, BookOpen } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import { useWindowSize } from '../hooks/useWindowSize';
+import { useWindowSize } from '../../hooks/useWindowSize';
+import { EspansoService } from '../../services/EspansoService';
 
 export const IconSidebar = () => {
   const { currentView, setCurrentView, resetEditor } = useStore();
@@ -15,9 +16,8 @@ export const IconSidebar = () => {
   const handleRestart = async () => {
     setIsRestarting(true);
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
       toast.promise(
-        invoke('restart_espanso'),
+        EspansoService.restart(),
         {
           loading: 'Restarting Espanso...',
           success: 'Success: Espanso Reloaded!',

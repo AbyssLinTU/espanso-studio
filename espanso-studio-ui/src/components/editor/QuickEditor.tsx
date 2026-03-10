@@ -1,5 +1,5 @@
 import { FileEdit } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { EditorHeader } from './EditorHeader';
 
 const QUICK_ADD_BUTTONS = [

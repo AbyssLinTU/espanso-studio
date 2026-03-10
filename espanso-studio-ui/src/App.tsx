@@ -1,27 +1,20 @@
 import { useEffect, useCallback, useState } from 'react';
 import { Toaster, toast } from 'sonner';
-import { IconSidebar } from './components/IconSidebar';
-import { HomeView } from './components/HomeView';
-import { QuickEditor } from './components/QuickEditor';
-import { BlueprintEditor } from './components/BlueprintEditor';
-import { LivePreview } from './components/LivePreview';
-import { HelpView } from './components/HelpView';
+import { IconSidebar } from './components/layout/IconSidebar';
+import { HomeView } from './components/views/HomeView';
+import { QuickEditor } from './components/editor/QuickEditor';
+import { BlueprintEditor } from './components/editor/BlueprintEditor';
+import { LivePreview } from './components/editor/LivePreview';
+import { HelpView } from './components/views/HelpView';
 import { useStore } from './store/useStore';
 import { useResize } from './hooks/useResize';
 import { useWindowSize } from './hooks/useWindowSize';
+import { EspansoService } from './services/EspansoService';
 import { ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants } from './utils/animations';
 
-async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
-  try {
-    const { invoke } = await import('@tauri-apps/api/core');
-    return await invoke<T>(cmd, args);
-  } catch (e) {
-    console.warn(`[Tauri IPC] ${cmd} failed:`, e);
-    return null;
-  }
-}
+
 
 function App() {
   const {
@@ -53,59 +46,16 @@ function App() {
 
   // Tauri init...
   const fetchFiles = useCallback(async () => {
-    const files = await safeInvoke<string[]>('list_yaml_files');
+    const files = await EspansoService.listFiles();
     if (files) {
       setFileList(files);
       if (files.length > 0) {
         setActiveFile(files[0]);
-        const content = await safeInvoke<string>('read_file', { filename: files[0] });
+        const content = await EspansoService.readFile(files[0]);
         if (content) {
           try {
-            const { parseDocument } = await import('yaml');
-            const doc = parseDocument(content);
-            const matches = doc.get('matches');
-            if (matches && Array.isArray((matches as any).items || matches)) {
-              const items = (matches as any).items || matches;
-              const macros = items.map((m: any) => {
-                const triggerOpts = {
-                  word: m.get?.('word') ?? m.word ?? false,
-                  case: m.get?.('case_sensitive') ?? m.case_sensitive ?? false,
-                  prop_case: m.get?.('propagate_case') ?? m.propagate_case ?? false
-                };
-
-                const varsObj = m.get?.('vars') ?? m.vars;
-                let varsArray = [];
-                if (varsObj && Array.isArray((varsObj as any).items || varsObj)) {
-                   const vItems = (varsObj as any).items || varsObj;
-                   varsArray = vItems.map((v: any) => {
-                     // Get JS object out of YAML Map
-                     const paramsNode = v.get?.('params') ?? v.params;
-                     const paramsObj: any = {};
-                     if (paramsNode && paramsNode.items) {
-                       paramsNode.items.forEach((item: any) => {
-                          paramsObj[item.key.value] = item.value.value;
-                       });
-                     } else if (paramsNode) {
-                       Object.assign(paramsObj, paramsNode);
-                     }
-                     return {
-                       id: v.get?.('name') ?? v.name,
-                       name: v.get?.('name') ?? v.name,
-                       type: v.get?.('type') ?? v.type,
-                       params: paramsObj
-                     };
-                   });
-                }
-
-                return {
-                  trigger: m.get?.('trigger') ?? m.trigger ?? '',
-                  replace: String(m.get?.('replace') ?? m.replace ?? ''),
-                  triggerOptions: triggerOpts,
-                  variables: varsArray
-                };
-              });
-              setMacros(macros);
-            }
+            const matches = EspansoService.parseYaml(content);
+            setMacros(matches);
           } catch {
              // skip parse error
           }
@@ -113,49 +63,23 @@ function App() {
       }
     }
     setReady(true);
-  }, [setFileList, setMacros]);
+  }, [setFileList, setMacros, setActiveFile]);
 
   const saveFile = useCallback(async () => {
     if (!activeFile) return;
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      const { stringify } = await import('yaml');
-      
-      const yamlMatches = macros.map(m => {
-        const match: any = {
-          trigger: m.trigger,
-          replace: m.replace
-        };
-        
-        if (m.triggerOptions?.word) match.word = true;
-        if (m.triggerOptions?.case) match.case_sensitive = true;
-        if (m.triggerOptions?.prop_case) match.propagate_case = true;
-        
-        if (m.variables && m.variables.length > 0) {
-          match.vars = m.variables.map(v => {
-             // Basic copy, removing internal `id` required by Zustand
-             return { name: v.name, type: v.type, params: v.params };
-          });
-        }
-        
-        return match;
-      });
+      const yamlContent = EspansoService.stringifyYaml(macros);
 
-      const yamlContent = stringify({ matches: yamlMatches });
-
-      await invoke('save_file', {
-        filename: activeFile,
-        content: yamlContent,
-      });
+      await EspansoService.saveFile(activeFile, yamlContent);
 
       // Sidecar graph save
       const sidecar = { nodes, edges };
-      await invoke('save_file', {
-        filename: `.${activeFile}.studio.json`,
-        content: JSON.stringify(sidecar, null, 2),
-      });
+      await EspansoService.saveFile(
+        `.${activeFile}.studio.json`,
+        JSON.stringify(sidecar, null, 2)
+      );
 
-      await invoke('restart_espanso');
+      await EspansoService.restart();
       toast.success('Saved & restarted!');
     } catch (e) {
       toast.error(`Save failed: ${e}`);
@@ -170,21 +94,10 @@ function App() {
       const { activeFile: af, macros: currentMacros, nodes: n, edges: e } = useStore.getState();
       if (!af) { toast.error('No file selected – cannot save'); return; }
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const { stringify } = await import('yaml');
-        const yamlMatches = currentMacros.map(m => {
-          const match: any = { trigger: m.trigger, replace: m.replace };
-          if (m.triggerOptions?.word) match.word = true;
-          if (m.triggerOptions?.case) match.case_sensitive = true;
-          if (m.triggerOptions?.prop_case) match.propagate_case = true;
-          if (m.variables && m.variables.length > 0) {
-            match.vars = m.variables.map(v => ({ name: v.name, type: v.type, params: v.params }));
-          }
-          return match;
-        });
-        await invoke('save_file', { filename: af, content: stringify({ matches: yamlMatches }) });
-        await invoke('save_file', { filename: `.${af}.studio.json`, content: JSON.stringify({ nodes: n, edges: e }, null, 2) });
-        await invoke('restart_espanso');
+        const yamlContent = EspansoService.stringifyYaml(currentMacros);
+        await EspansoService.saveFile(af, yamlContent);
+        await EspansoService.saveFile(`.${af}.studio.json`, JSON.stringify({ nodes: n, edges: e }, null, 2));
+        await EspansoService.restart();
       } catch (err) {
         toast.error(`Auto-save failed: ${err}`);
       }

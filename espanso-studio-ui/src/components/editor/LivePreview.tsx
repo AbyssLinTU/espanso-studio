@@ -1,5 +1,5 @@
 import { Eye, ChevronRight } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 
 export const LivePreview = () => {
   const { previewCollapsed, togglePreview, currentView, triggerText, replaceText } = useStore();
