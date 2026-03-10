@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "EspansoStudio",
-  "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "version": "1.0.0",
+  "identifier": "com.abysslintu.espanso-studio",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
