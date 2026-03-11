@@ -24,15 +24,25 @@
 
 We've reached a stable milestone! Espanso Studio has migrated from a legacy Python bridge to a **native Rust engine** using Tauri. This ensures high-speed execution, minimal memory footprint, and native security.
 
-## 🛠️ Version 1.0.2: The Forms & Logic Update
+## 🛠️ Version 1.0.2: The Core & Logic Evolution
 
-The `v1.0.2` release focuses on deepening the integration with Espanso's powerful variable engine:
+The `v1.0.2` release marks a complete structural overhaul, moving from prototype to a production-ready **Native Rust Engine**:
 
-- **💎 Advanced Form variables**: Added support for `.value` property access in forms. You can now use `{{myform.value}}` or define custom fields in the **Form Layout** and access them via `{{myform.myfield}}`.
-- **🎲 Fixed Random Pick**: The engine now correctly serializes choice lists as YAML arrays, ensuring 100% compatibility with the Espanso daemon.
-- **⚡ Reactive Live Preview**: The YAML preview panel now updates instantly as you change variable properties or trigger options.
-- **🧩 Blueprint Mode expansion**: Added visual support for `.value` interpolation in nodes and property panels.
-- **🔍 Smarter Variable Reconciler**: The editor now understands object-property access and won't accidentally delete your complex form variables.
+### 🧠 Logic & Variables
+- **💎 Advanced Form variables**: Full support for `.value` and custom property access (e.g. `{{myform.field}}`).
+- **🎲 Random Pick Engine**: Fixed serialization bug; choices are now correctly stored as YAML arrays for 100% Espanso compatibility.
+- **🔍 Smart Reconciler**: Improved variable detection algorithm that correctly identifies complex object-access patterns.
+
+### �️ Architecture (Native Rust Migration)
+- **🦀 Tauri 2.0 Backend**: Replaced Python execution with native Rust-to-OS commands for file management and Espanso control.
+- **🛡️ Secure IPC**: All filesystem operations (reading `base.yml`, saving macros) now flow through secure Tauri commands.
+- **📦 Sidecar Bundle**: Integrated the Espanso installer as a sidecar resource for seamless setup.
+
+### 🎨 UI & UX Refinement
+- **⚡ Reactive Live Preview**: Immediate YAML synchronization using reactive state management.
+- **🧩 Blueprint 2.0**: A standardized node system with visual `.value` interpolation and advanced property editing.
+- **� Premium Aesthetics**: Implemented Framer Motion animations and a cohesive Glassmorphism design system.
+- **📅 Smart Date Defaults**: Improved date variable initialization with standard format strings.
 
 ## ✨ Key Features
 
