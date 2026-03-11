@@ -24,25 +24,33 @@
 
 We've reached a stable milestone! Espanso Studio has migrated from a legacy Python bridge to a **native Rust engine** using Tauri. This ensures high-speed execution, minimal memory footprint, and native security.
 
-## 🛠️ Version 1.0.2: The Core & Logic Evolution
+## 🏗️ Version 1.0.2: The Core & Logic Evolution
 
-The `v1.0.2` release marks a complete structural overhaul, moving from prototype to a production-ready **Native Rust Engine**:
+The `v1.0.2` release marks a complete structural overhaul, moving from prototype to a production-ready **Native Rust Engine**. This update addresses critical stability issues and unlocks advanced Espanso features:
 
-### 🧠 Logic & Variables
-- **💎 Advanced Form variables**: Full support for `.value` and custom property access (e.g. `{{myform.field}}`).
-- **🎲 Random Pick Engine**: Fixed serialization bug; choices are now correctly stored as YAML arrays for 100% Espanso compatibility.
-- **🔍 Smart Reconciler**: Improved variable detection algorithm that correctly identifies complex object-access patterns.
+### 🐍 Python & Scripting (Windows-Optimized)
+- **⚡ Native Process Spawning**: Fixed script execution on Windows by transitioning from generic shell calls to explicit `python` command invocation. 
+- **✨ Seamless UX**: Implemented trigger clearing logic; the macro trigger is now immediately replaced with the script output (or an empty string if requested), preventing residual characters from remaining in the document.
+- **🛠️ Script Path Resolution**: Improved handling of absolute and relative paths for `.py` scripts within the `shell` and `script` variable types.
 
-### �️ Architecture (Native Rust Migration)
-- **🦀 Tauri 2.0 Backend**: Replaced Python execution with native Rust-to-OS commands for file management and Espanso control.
-- **🛡️ Secure IPC**: All filesystem operations (reading `base.yml`, saving macros) now flow through secure Tauri commands.
-- **📦 Sidecar Bundle**: Integrated the Espanso installer as a sidecar resource for seamless setup.
+### 🧠 Logic & Variable Engine
+- **💎 Advanced Form variables**: Added full support for `.value` property access. Users can now use `{{myform.value}}` for simple inputs or define complex **Form Layouts** (e.g., `[[topic]]`) and access specific fields via `{{myform.topic}}`.
+- **🎲 Random Pick (Array Serialization)**: Resolved a critical bug where random choices were saved as strings. The engine now correctly serializes choices as true YAML arrays (`- choice1`), ensuring 100% compatibility with the Espanso daemon parser.
+- **🔍 Smarter Reconciler**: Developed a new dependency-tracking algorithm for variables. The editor now understands object-property syntax and will no longer accidentally delete "orphaned" variables while typing complex tags.
 
-### 🎨 UI & UX Refinement
-- **⚡ Reactive Live Preview**: Immediate YAML synchronization using reactive state management.
-- **🧩 Blueprint 2.0**: A standardized node system with visual `.value` interpolation and advanced property editing.
-- **� Premium Aesthetics**: Implemented Framer Motion animations and a cohesive Glassmorphism design system.
-- **📅 Smart Date Defaults**: Improved date variable initialization with standard format strings.
+### 🏗️ Architecture (Native Rust Migration)
+- **🦀 Tauri 2.0 Integration**: Completely removed legacy Python dependencies for core app logic. File I/O for `base.yml` and Espanso process management are now handled by high-performance Rust handlers.
+- **🛡️ Secure IPC Layers**: All filesystem operations are now encapsulated in secure Tauri commands, preventing direct frontend access to sensitive configuration directories.
+- **📦 Sidecar Onboarding**: Integrated the official Espanso installer as a sidecar resource for seamless setup.
+
+### 🎨 Visual & UX Refinement
+- **⚡ Real-time YAML Sync**: Refactored `LivePreview.tsx` to use reactive state subscriptions. The YAML preview now updates instantly as you change variable properties or trigger options.
+- **🧩 Blueprint 2.0 Engine**:
+  - Added visual `.value` decorators for form-type nodes.
+  - Improved node-to-macro compilation logic for bi-directional synchronization.
+  - Redesigned the Properties Panel to include contextual help for bracket interpolation (`[[field]]`).
+- **💫 Fluid Interface**: Implemented Framer Motion spring-based animations for node spawning and UI transitions.
+- **📅 Standardized Dates**: Added automatic formatting string defaults (`%Y-%m-%d`) to new Date variables to ensure immediate functionality.
 
 ## ✨ Key Features
 
