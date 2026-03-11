@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Espanso Studio Pro `v1.0.1`
+# ⚡ Espanso Studio Pro `v1.0.2`
 
 > **The Ultimate Visual Environment for Espanso.**  
 > Built with **Rust (Tauri)** and **React (Vite 6)** for maximum performance and a premium desktop experience.
@@ -22,9 +22,17 @@
 
 ---
 
-## 🚀 The 1.0.0 Revolution
-
 We've reached a stable milestone! Espanso Studio has migrated from a legacy Python bridge to a **native Rust engine** using Tauri. This ensures high-speed execution, minimal memory footprint, and native security.
+
+## 🛠️ Version 1.0.2: The Forms & Logic Update
+
+The `v1.0.2` release focuses on deepening the integration with Espanso's powerful variable engine:
+
+- **💎 Advanced Form variables**: Added support for `.value` property access in forms. You can now use `{{myform.value}}` or define custom fields in the **Form Layout** and access them via `{{myform.myfield}}`.
+- **🎲 Fixed Random Pick**: The engine now correctly serializes choice lists as YAML arrays, ensuring 100% compatibility with the Espanso daemon.
+- **⚡ Reactive Live Preview**: The YAML preview panel now updates instantly as you change variable properties or trigger options.
+- **🧩 Blueprint Mode expansion**: Added visual support for `.value` interpolation in nodes and property panels.
+- **🔍 Smarter Variable Reconciler**: The editor now understands object-property access and won't accidentally delete your complex form variables.
 
 ## ✨ Key Features
 

@@ -116,9 +116,77 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const { editorMode: m, setEditorMode: sm, currentView: v, setCurrentView: scv } = useStore.getState();
+      
+      const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+
+      // Global Save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        saveFile();
+        if (v === 'editor') {
+          // If in editor, we must run the full saveMacro flow to commit local edits to the macros array
+          useStore.getState().saveMacro();
+        } else {
+          // If in home, we can just sync the array to disk
+          saveFile();
+        }
+      }
+
+      // Defer mode switching and home navigation if typing
+      if (!isInput) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+          e.preventDefault();
+          if (v === 'editor') {
+            sm(m === 'quick' ? 'blueprint' : 'quick');
+            toast(`Switched to ${m === 'quick' ? 'Blueprint' : 'Quick'} Mode`, { duration: 1500 });
+          }
+        }
+        
+        // Undo / Redo
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+           e.preventDefault();
+           const st = useStore.getState();
+           if (e.shiftKey) {
+             st.redo();
+             toast('Redo', { duration: 800 });
+           } else {
+             st.undo();
+             toast('Undo', { duration: 800 });
+           }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+           e.preventDefault();
+           useStore.getState().redo();
+           toast('Redo', { duration: 800 });
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'h' && !e.shiftKey) {
+          e.preventDefault();
+          scv('home');
+          toast('Returned Home', { duration: 1000 });
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+          e.preventDefault();
+          useStore.getState().resetEditor();
+          toast('New Macro', { duration: 1000 });
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          if (v === 'home') {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('focus-search'));
+          }
+        }
+        
+        // Escape to escape editor or previews
+        if (e.key === 'Escape') {
+          const s = useStore.getState();
+          if (s.currentView === 'editor') {
+             scv('home');
+             toast('Closed Editor', { duration: 1000 });
+          }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);

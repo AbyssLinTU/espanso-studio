@@ -2,11 +2,20 @@ import { Search, Pencil, Trash2, Hash } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { motion } from 'framer-motion';
 import { containerVariants, itemVariants } from '../../utils/animations';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export const HomeView = () => {
   const { macros, editMacro, deleteMacro } = useStore();
   const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      searchRef.current?.focus();
+    };
+    window.addEventListener('focus-search', handleFocusSearch);
+    return () => window.removeEventListener('focus-search', handleFocusSearch);
+  }, []);
 
   const filtered = macros.filter(
     (m) =>
@@ -32,6 +41,7 @@ export const HomeView = () => {
           <div className="relative w-full md:w-[320px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#71717A] w-5 h-5 pointer-events-none" />
             <input
+              ref={searchRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

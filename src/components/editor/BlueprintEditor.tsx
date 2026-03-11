@@ -98,18 +98,21 @@ export const BlueprintEditor = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                <p className="text-[13px] text-[#A1A1AA] font-medium mb-4 ml-1">Drag or click to add</p>
+                <p className="text-[13px] text-[#A1A1AA] font-medium mb-4 ml-1">Drag onto canvas or click</p>
                 {NODE_PALETTE.map((node) => (
-                  <button
+                  <div
                     key={node.key}
                     onClick={() => handlePaletteClick(node.key)}
                     onDragStart={(e) => onDragStart(e, node.key)}
-                    draggable
-                    className="w-full text-left bg-[#1C1C1F] hover:bg-[#252529] border border-[#2D2D30] hover:border-[#6366F1] text-[14px] text-[#D4D4D8] hover:text-white px-4 py-3.5 rounded-xl transition-all shadow-sm cursor-grab active:cursor-grabbing font-bold flex items-center justify-between group"
+                    draggable={true}
+                    className="w-full text-left bg-[#1C1C1F] hover:bg-[#252529] border border-[#2D2D30] hover:border-[#6366F1] text-[14px] text-[#D4D4D8] hover:text-white px-4 py-3.5 rounded-xl transition-all shadow-sm cursor-grab active:cursor-grabbing font-bold flex items-center justify-between group active:scale-[0.98] active:shadow-inner select-none"
                   >
-                    <span>{node.label}</span>
-                    <span className="text-[#6366F1] font-mono text-[16px] opacity-70 group-hover:opacity-100 transition-opacity">[{node.key}]</span>
-                  </button>
+                    <div className="flex items-center gap-3 pointer-events-none">
+                       <div className="w-1.5 h-6 bg-[#2D2D30] group-hover:bg-[#6366F1] rounded-full transition-colors shrink-0" />
+                       <span>{node.label}</span>
+                    </div>
+                    <span className="text-[#6366F1] font-mono text-[16px] opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none">[{node.key}]</span>
+                  </div>
                 ))}
               </div>
             </>
@@ -277,14 +280,17 @@ export const BlueprintEditor = () => {
                       {/* Form Field Editor */}
                       {selectedNode.data.nodeType === 'F' && (
                         <label className="flex flex-col gap-2">
-                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Field Title</span>
+                          <span className="text-[13px] text-[#A1A1AA] font-bold uppercase tracking-wider">Form Layout</span>
                           <input
                             type="text"
-                            value={(selectedNode.data.title as string) || ''}
-                            onChange={(e) => updateNodeData(selectedNode.id, { title: e.target.value })}
+                            value={(selectedNode.data.layout as string) || (selectedNode.data.title ? `[[${selectedNode.data.title}]]` : '')}
+                            onChange={(e) => updateNodeData(selectedNode.id, { layout: e.target.value })}
                             className="bg-[#1C1C1F] border border-[#2D2D30] rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#6366F1]"
-                            placeholder="User Input"
+                            placeholder="Prompt [[value]]"
                           />
+                          <p className="text-[11px] text-[#71717A]">
+                            Fields in brackets (e.g. [[value]]) can be accessed as {'{{'}{(selectedNode.data.varName as string) || 'var'}.value{'}}'}
+                          </p>
                         </label>
                       )}
 

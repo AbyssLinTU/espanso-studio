@@ -2,7 +2,7 @@ import { Eye, ChevronRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 export const LivePreview = () => {
-  const { previewCollapsed, togglePreview, currentView, triggerText, replaceText } = useStore();
+  const { previewCollapsed, togglePreview, currentView, triggerText, replaceText, triggerOptions, variables } = useStore();
 
   return (
     <div className="h-full flex flex-col bg-[#121214] border-l border-[#2D2D30]">
@@ -37,19 +37,19 @@ export const LivePreview = () => {
                   </div>
 
                   {/* Trigger Options */}
-                  {useStore.getState().triggerOptions.word && (
+                  {triggerOptions.word && (
                     <div className="flex gap-2 ml-4">
                       <span className="text-[#818CF8]">word:</span>
                       <span className="text-[#F59E0B]">true</span>
                     </div>
                   )}
-                  {useStore.getState().triggerOptions.case && (
+                  {triggerOptions.case && (
                     <div className="flex gap-2 ml-4">
                       <span className="text-[#818CF8]">case_sensitive:</span>
                       <span className="text-[#F59E0B]">true</span>
                     </div>
                   )}
-                  {useStore.getState().triggerOptions.prop_case && (
+                  {triggerOptions.prop_case && (
                     <div className="flex gap-2 ml-4">
                       <span className="text-[#818CF8]">propagate_case:</span>
                       <span className="text-[#F59E0B]">true</span>
@@ -72,10 +72,10 @@ export const LivePreview = () => {
                   )}
 
                   {/* Variables */}
-                  {useStore.getState().variables.length > 0 && (
+                  {variables.length > 0 && (
                     <div className="mt-1">
                       <div className="text-[#818CF8]">vars:</div>
-                      {useStore.getState().variables.map((v, i) => (
+                      {variables.map((v, i) => (
                         <div key={i} className="ml-4">
                           <div className="flex gap-2">
                             <span className="text-[#71717A]">-</span>

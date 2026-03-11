@@ -199,6 +199,27 @@ export const HelpView = () => {
 
         <div className="w-full h-px bg-[#1E1E21]" />
 
+        <div className="w-full h-px bg-[#1E1E21]" />
+        
+        {/* Section 8: Hotkeys */}
+        <Section
+          icon={<Zap className="w-4 h-4 text-[#FDE68A]" />}
+          color="bg-[#FBBF24]/10"
+          title="Shortcuts & Hotkeys"
+          description="Master the Workflow"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <InfoCard title="Ctrl + S" text="Save and auto-restart Espanso" />
+            <InfoCard title="Ctrl + B" text="Toggle Quick / Blueprint Mode" />
+            <InfoCard title="Ctrl + N" text="Instantly create a New Macro" />
+            <InfoCard title="Ctrl + F" text="Focus Search Bar (Home View)" />
+            <InfoCard title="Ctrl + H" text="Go to Home Dashboard" />
+            <InfoCard title="Ctrl + Z" text="Undo last action (Blueprint)" />
+            <InfoCard title="Ctrl + Shift + Z" text="Redo (or use Ctrl + Y)" />
+            <InfoCard title="Esc" text="Close Editor / Dismiss Previews" />
+          </div>
+        </Section>
+
         {/* Section 7: Tips */}
         <Section
           icon={<RefreshCw className="w-4 h-4 text-[#FB923C]" />}

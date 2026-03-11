@@ -8,11 +8,16 @@ export const EditorHeader = () => {
     triggerText, setTriggerText,
     triggerOptions, setTriggerOptions,
     editorMode, setEditorMode,
-    saveMacro, setCurrentView
+    saveMacro, setCurrentView,
+    macros, originalTriggerText
   } = useStore();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Check if current trigger is a duplicate of an existing one (excluding currently edited one)
+  const isDuplicate = triggerText?.trim() !== '' && 
+    macros.some(m => m.trigger === triggerText && m.trigger !== originalTriggerText);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -63,15 +68,31 @@ export const EditorHeader = () => {
         
         {/* Trigger Input and Settings Group */}
         <div className="flex items-center gap-3 border-r border-[#2D2D30] pr-4 flex-none">
-          <div className="flex items-center gap-2 flex-none">
-            <span className="text-[13px] text-[#71717A] font-semibold hidden sm:block">Trigger</span>
-            <input
-              type="text"
-              value={triggerText || ''}
-              onChange={(e) => setTriggerText(e.target.value)}
-              placeholder=":trigger"
-              className="bg-[#151517] border border-[#333338] rounded-lg px-3 py-1.5 w-[140px] md:w-[180px] text-[14px] font-bold text-[#F4F4F5] placeholder:text-[#52525B] focus:outline-none focus:border-[#6366F1] transition-all shadow-inner"
-            />
+          <div className="flex flex-col relative">
+            <div className="flex items-center gap-2 flex-none">
+              <span className="text-[13px] text-[#71717A] font-semibold hidden sm:block">Trigger</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={triggerText || ''}
+                  onChange={(e) => setTriggerText(e.target.value)}
+                  placeholder=":trigger"
+                  className={`bg-[#151517] border rounded-lg px-3 py-1.5 w-[140px] md:w-[180px] text-[14px] font-bold text-[#F4F4F5] placeholder:text-[#52525B] focus:outline-none transition-all shadow-inner ${
+                    isDuplicate ? 'border-[#F59E0B] focus:border-[#F59E0B]' : 'border-[#333338] focus:border-[#6366F1]'
+                  }`}
+                />
+                {isDuplicate && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="absolute -top-6 right-0 text-[10px] font-bold text-[#F59E0B] uppercase flex items-center gap-1"
+                  >
+                    <Info className="w-3 h-3" />
+                    Duplicate (Overwrite)
+                  </motion.div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 bg-[#0B0B0D] rounded-lg px-3 py-1.5 border border-[#27272A] flex-none">

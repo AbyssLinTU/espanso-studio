@@ -30,7 +30,7 @@ export const QuickEditor = () => {
     }
 
     const varId = `var_${Math.floor(Math.random() * 10000)}`;
-    const snippetToInsert = `{{${varName}}}`;
+    const snippetToInsert = btn.type === 'form' ? `{{${varName}.value}}` : `{{${varName}}}`;
     
     setReplaceText(replaceText + snippetToInsert);
     
@@ -38,7 +38,7 @@ export const QuickEditor = () => {
     else if (btn.type === 'shell') addVariable({ id: varId, name: varName, type: 'shell', params: { cmd: 'echo "Hello"' } });
     else if (btn.type === 'clipboard') addVariable({ id: varId, name: varName, type: 'clipboard', params: {} });
     else if (btn.type === 'random') addVariable({ id: varId, name: varName, type: 'random', params: { choices: 'A,B,C' } });
-    else if (btn.type === 'form') addVariable({ id: varId, name: varName, type: 'form', params: { title: 'User Input' } });
+    else if (btn.type === 'form') addVariable({ id: varId, name: varName, type: 'form', params: { layout: 'Prompt: [[value]]' } });
     else if (btn.type === 'script') addVariable({ id: varId, name: varName, type: 'shell', params: { cmd: 'python "script.py"' } });
   };
 
@@ -157,14 +157,17 @@ export const QuickEditor = () => {
 
                    {ext.type === 'form' && (
                     <label className="flex flex-col gap-2">
-                       <span className="text-[12px] text-[#A1A1AA] font-semibold">Field Title / Prompt</span>
+                       <span className="text-[12px] text-[#A1A1AA] font-semibold">Form Layout</span>
                        <input 
                          type="text" 
-                         value={ext.params.title || ''} 
-                         onChange={(e) => updateVariable(ext.id, 'title', e.target.value)} 
+                         value={ext.params.layout ?? (ext.params.title ? `[[${ext.params.title}]]` : '')} 
+                         onChange={(e) => updateVariable(ext.id, 'layout', e.target.value)} 
                          className="bg-[#121214] border border-[#3F3F46] rounded-md px-3 py-2 text-[14px] text-[#F4F4F5] focus:border-[#6366F1] outline-none" 
-                         placeholder="Enter you name"
+                         placeholder="Prompt: [[value]]"
                        />
+                       <p className="text-[11px] text-[#71717A]">
+                         Fields in brackets (e.g. [[value]]) can be accessed as {'{{'}{ext.name}.value{'}}'}
+                       </p>
                     </label>
                   )}
 

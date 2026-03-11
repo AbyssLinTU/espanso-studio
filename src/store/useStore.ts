@@ -59,6 +59,10 @@ interface AppState {
   nodes: Node[];
   edges: Edge[];
 
+  // Undo/Redo History
+  past: { nodes: Node[], edges: Edge[] }[];
+  future: { nodes: Node[], edges: Edge[] }[];
+
   // Panels
   previewCollapsed: boolean;
   nodesCollapsed: boolean;
@@ -68,6 +72,9 @@ interface AppState {
   parserError: string | null;
 
   // Actions
+  undo: () => void;
+  redo: () => void;
+  takeSnapshot: () => void;
   setCurrentView: (v: CurrentView) => void;
   setEditorMode: (m: EditorMode) => void;
   setActiveFile: (f: string | null) => void;
@@ -126,12 +133,61 @@ export const useStore = create<AppState>((set, get) => ({
 
   nodes: [],
   edges: [],
+  past: [],
+  future: [],
 
   previewCollapsed: false,
   nodesCollapsed: false,
   propsCollapsed: false,
 
   parserError: null,
+
+  takeSnapshot: () => {
+    const { nodes, edges, past } = get();
+    // Keep last 50 steps
+    const newPast = [...past.slice(-49), { nodes: [...nodes], edges: [...edges] }];
+    set({ past: newPast, future: [] });
+  },
+
+  undo: () => {
+    const { past, future, nodes, edges } = get();
+    if (past.length === 0) return;
+
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, past.length - 1);
+    
+    set({
+      nodes: previous.nodes,
+      edges: previous.edges,
+      past: newPast,
+      future: [{ nodes, edges }, ...future].slice(0, 50),
+    });
+    
+    // Sync after undo if in blueprint mode
+    if (get().editorMode === 'blueprint') {
+      get().syncBlueprintToQuick();
+    }
+  },
+
+  redo: () => {
+    const { past, future, nodes, edges } = get();
+    if (future.length === 0) return;
+
+    const next = future[0];
+    const newFuture = future.slice(1);
+
+    set({
+      nodes: next.nodes,
+      edges: next.edges,
+      past: [...past, { nodes, edges }].slice(-50),
+      future: newFuture,
+    });
+
+    // Sync after redo if in blueprint mode
+    if (get().editorMode === 'blueprint') {
+      get().syncBlueprintToQuick();
+    }
+  },
 
   setCurrentView: (v) => set({ currentView: v }),
   setEditorMode: (m) => {
@@ -194,6 +250,22 @@ export const useStore = create<AppState>((set, get) => ({
       if (!state.triggerText.trim() || !state.replaceText.trim()) {
         toast.error('Trigger and replacement cannot be empty');
         return;
+      }
+
+      // Validate variables (e.g., random needs choices)
+      for (const v of state.variables) {
+        if (v.type === 'random' && (!v.params.choices || v.params.choices.trim() === '')) {
+          toast.error(`Variable "${v.name}" (random) must have at least one choice.`);
+          return;
+        }
+        if (v.type === 'form') {
+           const hasLayout = v.params.layout && v.params.layout.trim() !== '[[Input]]' && v.params.layout.trim() !== '';
+           const hasTitle = v.params.title && v.params.title.trim() !== '';
+           if (!hasLayout && !hasTitle) {
+              toast.error(`Variable "${v.name}" (form) must have a prompt or layout.`);
+              return;
+           }
+        }
       }
 
       const newMacro: MacroCard = { 
@@ -273,12 +345,13 @@ export const useStore = create<AppState>((set, get) => ({
     const matches = state.replaceText.matchAll(/\{\{([^}]+)\}\}/g);
     
     for (const match of matches) {
-      activeVariableNames.add(match[1].trim());
+      const baseName = match[1].trim().split('.')[0];
+      activeVariableNames.add(baseName);
     }
 
     // Keep only the variables whose placeholder name matches an active variable
     const cleanedVariables = state.variables.filter(v => 
-      activeVariableNames.has(v.name)
+      activeVariableNames.has(v.name.split('.')[0])
     );
 
     if (cleanedVariables.length !== state.variables.length) {
@@ -293,12 +366,26 @@ export const useStore = create<AppState>((set, get) => ({
   toggleNodes: () => set((s) => ({ nodesCollapsed: !s.nodesCollapsed })),
   toggleProps: () => set((s) => ({ propsCollapsed: !s.propsCollapsed })),
 
-  onNodesChange: (changes) => set({ nodes: applyNodeChanges(changes, get().nodes) }),
-  onEdgesChange: (changes) => set({ edges: applyEdgeChanges(changes, get().edges) }),
-  onConnect: (connection) => set({ edges: addEdge(connection, get().edges) }),
+  onNodesChange: (changes) => {
+    // Only snapshot if not just selecting
+    const isSignificant = changes.some(c => c.type !== 'select');
+    if (isSignificant) {
+      get().takeSnapshot();
+    }
+    set({ nodes: applyNodeChanges(changes, get().nodes) });
+  },
+  onEdgesChange: (changes) => {
+    get().takeSnapshot();
+    set({ edges: applyEdgeChanges(changes, get().edges) });
+  },
+  onConnect: (connection) => {
+    get().takeSnapshot();
+    set({ edges: addEdge(connection, get().edges) });
+  },
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
   addNode: (type, position, label) => {
+    get().takeSnapshot();
     const newNode: Node = {
       id: `${type}-${Date.now()}`,
       type: 'customNode', // using our specialized visual node
@@ -316,6 +403,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
   updateNodeData: (id, newData) => {
     const s = get();
+    s.takeSnapshot();
     const newNodes = s.nodes.map(n => 
       n.id === id ? { ...n, data: { ...n.data, ...newData } } : n
     );
@@ -352,7 +440,8 @@ export const useStore = create<AppState>((set, get) => ({
       let label = token; // Fallback plain text
 
       if (isVariable) {
-        const varName = token.slice(2, -2).trim();
+        const fullVarName = token.slice(2, -2).trim();
+        const varName = fullVarName.split('.')[0];
         const varConfig = get().variables.find(v => v.name === varName);
 
         if (varConfig) {
@@ -387,11 +476,11 @@ export const useStore = create<AppState>((set, get) => ({
             originalText: token,
             // Restore parameters from existing variables array
             varName: isVariable ? token.slice(2, -2).trim() : undefined,
-            ...(isVariable ? (get().variables.find(v => v.name === token.slice(2, -2).trim())?.params || {}) : {}),
+            ...(isVariable ? (get().variables.find(v => v.name === token.slice(2, -2).trim().split('.')[0])?.params || {}) : {}),
             // Special handling for legacy Python scripts or shell-python scripts
             ...(nodeType === '#' && isVariable ? { 
-              path: get().variables.find(v => v.name === token.slice(2, -2).trim())?.params.path || 
-                    get().variables.find(v => v.name === token.slice(2, -2).trim())?.params.cmd?.match(/python\s+"?([^"]+)"?/)?.[1] || 
+              path: get().variables.find(v => v.name === token.slice(2, -2).trim().split('.')[0])?.params.path || 
+                    get().variables.find(v => v.name === token.slice(2, -2).trim().split('.')[0])?.params.cmd?.match(/python\s+"?([^"]+)"?/)?.[1] || 
                     '' 
             } : {}),
             // For Text Output nodes, the text is the token itself
@@ -449,7 +538,7 @@ export const useStore = create<AppState>((set, get) => ({
       } else {
         // Variable nodes
         const varName = (nData.varName as string) || `var_${nextNode.id.split('-').pop()}`;
-        compiledText += `{{${varName}}}`;
+        compiledText += nType === 'F' ? `{{${varName}.value}}` : `{{${varName}}}`;
 
         // Map node properties to Espanso variable types
         let varType: Variable['type'] = 'date';
@@ -458,7 +547,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (nType === 'D') { varType = 'date'; params = { format: (nData.format as string) || '%Y-%m-%d' }; }
         else if (nType === '$') { varType = 'shell'; params = { cmd: (nData.cmd as string) || 'echo "hello"' }; }
         else if (nType === 'C') { varType = 'clipboard'; params = {}; }
-        else if (nType === 'F') { varType = 'form'; params = { title: (nData.title as string) || 'Input' }; }
+        else if (nType === 'F') { varType = 'form'; params = { layout: (nData.layout as string) || (nData.title ? `[[${nData.title}]]` : 'Prompt: [[value]]') }; }
         else if (nType === '?') { varType = 'random'; params = { choices: (nData.choices as string) || 'A,B,C' }; }
         else if (nType === '#') { 
           // Map to shell for better Windows support

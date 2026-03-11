@@ -62,7 +62,13 @@ export const EspansoService = {
              const paramsObj: any = {};
              if (paramsNode && paramsNode.items) {
                paramsNode.items.forEach((item: any) => {
-                  paramsObj[item.key.value] = item.value.value;
+                  let val = item.value?.value;
+                  if (item.value && Array.isArray(item.value.items)) {
+                     val = item.value.items.map((i: any) => i.value).join(', ');
+                  } else if (item.value && Array.isArray(item.value)) {
+                     val = item.value.join(', ');
+                  }
+                  paramsObj[item.key.value] = val;
                });
              } else if (paramsNode) {
                Object.assign(paramsObj, paramsNode);
@@ -101,11 +107,30 @@ export const EspansoService = {
       if (m.triggerOptions?.prop_case) match.propagate_case = true;
       
       if (m.variables && m.variables.length > 0) {
-        match.vars = m.variables.map((v: any) => ({
-          name: v.name,
-          type: v.type,
-          params: v.params
-        }));
+        match.vars = m.variables.map((v: any) => {
+          const varOutput: any = {
+            name: v.name,
+            type: v.type,
+            params: { ...v.params }
+          };
+
+          // Transform form parameters for Espanso compatibility
+          if (v.type === 'form') {
+            if (!varOutput.params.layout && varOutput.params.title) {
+              varOutput.params.layout = `[[${varOutput.params.title}]]`;
+              delete varOutput.params.title;
+            }
+          }
+
+          // Transform random choices to array for Espanso compatibility
+          if (v.type === 'random') {
+            if (typeof varOutput.params.choices === 'string') {
+               varOutput.params.choices = varOutput.params.choices.split(',').map((c: string) => c.trim()).filter(Boolean);
+            }
+          }
+
+          return varOutput;
+        });
       }
       
       return match;

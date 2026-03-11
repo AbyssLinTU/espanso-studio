@@ -51,38 +51,38 @@ export const CustomNode = ({ data, selected }: { data: any; selected: boolean })
 
       {/* Node Body */}
       <div className="p-5 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-           <span className="text-[11px] text-[#71717A] uppercase font-bold tracking-widest">Preview</span>
-           {data.varName && (
-             <span className="text-[#6366F1] font-mono text-[10px] bg-[#6366F1]/10 px-1.5 py-0.5 rounded">
-               {`{{${data.varName}}}`}
-             </span>
+         <div className="flex items-center justify-between">
+            <span className="text-[11px] text-[#71717A] uppercase font-bold tracking-widest">Preview</span>
+            {data.varName && (
+              <span className="text-[#6366F1] font-mono text-[10px] bg-[#6366F1]/10 px-1.5 py-0.5 rounded">
+                {`{{${data.varName}${data.nodeType === 'F' ? '.value' : ''}}}`}
+              </span>
+            )}
+         </div>
+         
+         <div className="min-h-[40px] flex flex-col justify-center">
+           {data.nodeType === 'T' && (
+             <p className="text-[14px] text-[#F4F4F5] line-clamp-2 font-medium italic opacity-80">
+               "{data.text || 'Empty text'}"
+             </p>
            )}
-        </div>
-        
-        <div className="min-h-[40px] flex flex-col justify-center">
-          {data.nodeType === 'T' && (
-            <p className="text-[14px] text-[#F4F4F5] line-clamp-2 font-medium italic opacity-80">
-              "{data.text || 'Empty text'}"
-            </p>
-          )}
-          {data.nodeType === 'D' && (
-            <p className="text-[14px] text-[#8B5CF6] font-mono font-bold">
-              {data.format || '%Y-%m-%d'}
-            </p>
-          )}
-          {data.nodeType === '$' && (
-            <div className="bg-[#0B0B0D] rounded-lg p-2 border border-[#2D2D30]">
-               <p className="text-[12px] text-[#F97316] font-mono truncate">
-                 $ {data.cmd || 'echo ...'}
-               </p>
-            </div>
-          )}
-          {data.nodeType === 'F' && (
-            <p className="text-[14px] text-[#EC4899] font-bold">
-              [{data.title || 'Input Field'}]
-            </p>
-          )}
+           {data.nodeType === 'D' && (
+             <p className="text-[14px] text-[#8B5CF6] font-mono font-bold">
+               {data.format || '%Y-%m-%d'}
+             </p>
+           )}
+           {data.nodeType === '$' && (
+             <div className="bg-[#0B0B0D] rounded-lg p-2 border border-[#2D2D30]">
+                <p className="text-[12px] text-[#F97316] font-mono truncate">
+                  $ {data.cmd || 'echo ...'}
+                </p>
+             </div>
+           )}
+           {data.nodeType === 'F' && (
+             <p className="text-[14px] text-[#EC4899] font-bold">
+               {data.layout || (data.title ? `[[${data.title}]]` : 'Input Field')}
+             </p>
+           )}
           {data.nodeType === '?' && (
              <p className="text-[13px] text-[#14B8A6] truncate italic">
                Options: {data.choices || '...'}

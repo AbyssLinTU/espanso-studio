@@ -64,6 +64,10 @@ export const Canvas = () => {
         nodeTypes={nodeTypes}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        onPaneClick={() => {
+           // Allow deleting nodes via Keyboard when pane is clicked
+           (reactFlowWrapper.current?.querySelector('.react-flow__renderer') as HTMLElement)?.focus();
+        }}
         fitView
         colorMode="dark"
         proOptions={{ hideAttribution: true }}
