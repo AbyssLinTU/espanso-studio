@@ -15,7 +15,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants } from './utils/animations';
 import { InstallModal } from './components/layout/InstallModal';
 
+/**
+ * Persists the active file matches and graph sidecar state to disk, then restarts Espanso daemon.
+ */
+async function persistActiveFile(showToast = false): Promise<void> {
+  const { activeFile, macros, nodes, edges } = useStore.getState();
+  if (!activeFile) {
+    toast.error('No file selected – cannot save');
+    return;
+  }
+  try {
+    const yamlContent = EspansoService.stringifyYaml(macros);
+    await EspansoService.saveFile(activeFile, yamlContent);
 
+    const sidecar = { nodes, edges };
+    await EspansoService.saveFile(
+      `.${activeFile}.studio.json`,
+      JSON.stringify(sidecar, null, 2)
+    );
+
+    await EspansoService.restart();
+    if (showToast) {
+      toast.success('Saved & restarted!');
+    }
+  } catch (err) {
+    toast.error(`Save failed: ${err}`);
+    throw err;
+  }
+}
 
 function App() {
   const {
@@ -24,19 +51,14 @@ function App() {
     previewCollapsed,
     togglePreview,
     setFileList,
-    macros,
     setMacros,
-    activeFile,
     setActiveFile,
-    nodes,
-    edges,
   } = useStore();
   const [ready, setReady] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
 
   // Custom panel resizer (initial 360px, min 280, max 600)
   const { width: previewWidth, startResize, isResizing } = useResize(360, 280, 600);
-
   const { width: windowWidth } = useWindowSize();
 
   // Auto-collapse preview on smaller screens
@@ -55,140 +77,125 @@ function App() {
     }
 
     const files = await EspansoService.listFiles();
-    if (files) {
+    if (files && files.length > 0) {
       setFileList(files);
-      if (files.length > 0) {
-        setActiveFile(files[0]);
-        const content = await EspansoService.readFile(files[0]);
-        if (content) {
-          try {
-            const matches = EspansoService.parseYaml(content);
-            setMacros(matches);
-          } catch {
-             // skip parse error
-          }
+      setActiveFile(files[0]);
+      const content = await EspansoService.readFile(files[0]);
+      if (content) {
+        try {
+          const matches = EspansoService.parseYaml(content);
+          setMacros(matches);
+        } catch {
+          // skip parse error
         }
       }
     }
     setReady(true);
   }, [setFileList, setMacros, setActiveFile]);
 
-  const saveFile = useCallback(async () => {
-    if (!activeFile) return;
-    try {
-      const yamlContent = EspansoService.stringifyYaml(macros);
+  const saveFile = useCallback(() => {
+    return persistActiveFile(true);
+  }, []);
 
-      await EspansoService.saveFile(activeFile, yamlContent);
-
-      // Sidecar graph save
-      const sidecar = { nodes, edges };
-      await EspansoService.saveFile(
-        `.${activeFile}.studio.json`,
-        JSON.stringify(sidecar, null, 2)
-      );
-
-      await EspansoService.restart();
-      toast.success('Saved & restarted!');
-    } catch (e) {
-      toast.error(`Save failed: ${e}`);
-    }
-  }, [activeFile, nodes, edges, macros]);
-
-  useEffect(() => { fetchFiles(); }, [fetchFiles]);
-
-  // Listen for the 'espanso-save' event dispatched by the store after saveMacro()
   useEffect(() => {
-    const handleEspansoSave = async () => {
-      const { activeFile: af, macros: currentMacros, nodes: n, edges: e } = useStore.getState();
-      if (!af) { toast.error('No file selected – cannot save'); return; }
-      try {
-        const yamlContent = EspansoService.stringifyYaml(currentMacros);
-        await EspansoService.saveFile(af, yamlContent);
-        await EspansoService.saveFile(`.${af}.studio.json`, JSON.stringify({ nodes: n, edges: e }, null, 2));
-        await EspansoService.restart();
-      } catch (err) {
-        toast.error(`Auto-save failed: ${err}`);
-      }
+    fetchFiles();
+  }, [fetchFiles]);
+
+  // Listen for the 'espanso-save' event dispatched by the store after saveMacro() or deleteMacro()
+  useEffect(() => {
+    const handleEspansoSave = () => {
+      persistActiveFile(false);
     };
     window.addEventListener('espanso-save', handleEspansoSave);
     return () => window.removeEventListener('espanso-save', handleEspansoSave);
   }, []);
 
+  // Keyboard shortcut handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const { editorMode: m, setEditorMode: sm, currentView: v, setCurrentView: scv } = useStore.getState();
-      
       const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+      const state = useStore.getState();
 
-      // Global Save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      // Global Save (Cmd+S / Ctrl+S)
+      if (isCmdOrCtrl && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        if (v === 'editor') {
-          // If in editor, we must run the full saveMacro flow to commit local edits to the macros array
-          useStore.getState().saveMacro();
+        if (state.currentView === 'editor') {
+          state.saveMacro();
         } else {
-          // If in home, we can just sync the array to disk
           saveFile();
         }
+        return;
       }
 
-      // Defer mode switching and home navigation if typing
-      if (!isInput) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-          e.preventDefault();
-          if (v === 'editor') {
-            sm(m === 'quick' ? 'blueprint' : 'quick');
-            toast(`Switched to ${m === 'quick' ? 'Blueprint' : 'Quick'} Mode`, { duration: 1500 });
-          }
-        }
-        
-        // Undo / Redo
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-           e.preventDefault();
-           const st = useStore.getState();
-           if (e.shiftKey) {
-             st.redo();
-             toast('Redo', { duration: 800 });
-           } else {
-             st.undo();
-             toast('Undo', { duration: 800 });
-           }
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-           e.preventDefault();
-           useStore.getState().redo();
-           toast('Redo', { duration: 800 });
-        }
+      // Ignore remaining hotkeys while typing in input/textarea
+      if (isInput) return;
 
-        if ((e.ctrlKey || e.metaKey) && e.key === 'h' && !e.shiftKey) {
-          e.preventDefault();
-          scv('home');
-          toast('Returned Home', { duration: 1000 });
+      // Mode switch (Cmd+B / Ctrl+B)
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        if (state.currentView === 'editor') {
+          const nextMode = state.editorMode === 'quick' ? 'blueprint' : 'quick';
+          state.setEditorMode(nextMode);
+          toast(`Switched to ${nextMode === 'quick' ? 'Quick' : 'Blueprint'} Mode`, { duration: 1500 });
         }
+        return;
+      }
 
-        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-          e.preventDefault();
-          useStore.getState().resetEditor();
-          toast('New Macro', { duration: 1000 });
+      // Undo / Redo (Cmd+Z / Cmd+Shift+Z / Cmd+Y)
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          state.redo();
+          toast('Redo', { duration: 800 });
+        } else {
+          state.undo();
+          toast('Undo', { duration: 800 });
         }
+        return;
+      }
 
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-          if (v === 'home') {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent('focus-search'));
-          }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        state.redo();
+        toast('Redo', { duration: 800 });
+        return;
+      }
+
+      // Return Home (Cmd+H)
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'h' && !e.shiftKey) {
+        e.preventDefault();
+        state.setCurrentView('home');
+        toast('Returned Home', { duration: 1000 });
+        return;
+      }
+
+      // New Macro (Cmd+N)
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        state.resetEditor();
+        toast('New Macro', { duration: 1000 });
+        return;
+      }
+
+      // Focus Search (Cmd+F)
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'f') {
+        if (state.currentView === 'home') {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('focus-search'));
         }
-        
-        // Escape to escape editor or previews
-        if (e.key === 'Escape') {
-          const s = useStore.getState();
-          if (s.currentView === 'editor') {
-             scv('home');
-             toast('Closed Editor', { duration: 1000 });
-          }
+        return;
+      }
+
+      // Escape to exit editor
+      if (e.key === 'Escape') {
+        if (state.currentView === 'editor') {
+          state.setCurrentView('home');
+          toast('Closed Editor', { duration: 1000 });
         }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [saveFile]);

@@ -19,6 +19,7 @@ export type EditorMode = 'quick' | 'blueprint';
 export interface MacroCard {
   trigger: string;
   replace: string;
+  folder?: string;
   triggerOptions?: TriggerOptions;
   variables?: Variable[];
 }

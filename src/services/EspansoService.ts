@@ -1,4 +1,5 @@
 import { parseDocument, stringify } from 'yaml';
+import type { MacroCard } from '../store/useStore';
 
 export async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   try {
@@ -27,7 +28,7 @@ export const EspansoService = {
     return await safeInvoke<void>('restart_espanso');
   },
 
-  async checkInstalled() : Promise<boolean> {
+  async checkInstalled(): Promise<boolean> {
     const res = await safeInvoke<boolean>('check_espanso_installed');
     return res === true;
   },
@@ -36,14 +37,14 @@ export const EspansoService = {
     return await safeInvoke<void>('install_espanso');
   },
 
-  parseYaml(content: string) {
+  parseYaml(content: string): MacroCard[] {
     try {
       const doc = parseDocument(content);
       const matchesNode = doc.get('matches');
-      
+
       let matchesArray = [];
       if (matchesNode && Array.isArray((matchesNode as any).items || matchesNode)) {
-          matchesArray = (matchesNode as any).items || matchesNode;
+        matchesArray = (matchesNode as any).items || matchesNode;
       }
 
       return matchesArray.map((m: any) => {
@@ -56,35 +57,36 @@ export const EspansoService = {
         const varsObj = m.get?.('vars') ?? m.vars;
         let varsArray = [];
         if (varsObj && Array.isArray((varsObj as any).items || varsObj)) {
-           const vItems = (varsObj as any).items || varsObj;
-           varsArray = vItems.map((v: any) => {
-             const paramsNode = v.get?.('params') ?? v.params;
-             const paramsObj: any = {};
-             if (paramsNode && paramsNode.items) {
-               paramsNode.items.forEach((item: any) => {
-                  let val = item.value?.value;
-                  if (item.value && Array.isArray(item.value.items)) {
-                     val = item.value.items.map((i: any) => i.value).join(', ');
-                  } else if (item.value && Array.isArray(item.value)) {
-                     val = item.value.join(', ');
-                  }
-                  paramsObj[item.key.value] = val;
-               });
-             } else if (paramsNode) {
-               Object.assign(paramsObj, paramsNode);
-             }
-             return {
-               id: v.get?.('name') ?? v.name,
-               name: v.get?.('name') ?? v.name,
-               type: v.get?.('type') ?? v.type,
-               params: paramsObj
-             };
-           });
+          const vItems = (varsObj as any).items || varsObj;
+          varsArray = vItems.map((v: any) => {
+            const paramsNode = v.get?.('params') ?? v.params;
+            const paramsObj: any = {};
+            if (paramsNode && paramsNode.items) {
+              paramsNode.items.forEach((item: any) => {
+                let val = item.value?.value;
+                if (item.value && Array.isArray(item.value.items)) {
+                  val = item.value.items.map((i: any) => i.value).join(', ');
+                } else if (item.value && Array.isArray(item.value)) {
+                  val = item.value.join(', ');
+                }
+                paramsObj[item.key.value] = val;
+              });
+            } else if (paramsNode) {
+              Object.assign(paramsObj, paramsNode);
+            }
+            return {
+              id: v.get?.('name') ?? v.name,
+              name: v.get?.('name') ?? v.name,
+              type: v.get?.('type') ?? v.type,
+              params: paramsObj
+            };
+          });
         }
 
         return {
           trigger: m.get?.('trigger') ?? m.trigger ?? '',
           replace: String(m.get?.('replace') ?? m.replace ?? ''),
+          folder: m.get?.('folder') ?? m.folder ?? '',
           triggerOptions: triggerOpts,
           variables: varsArray
         };
@@ -95,17 +97,18 @@ export const EspansoService = {
     }
   },
 
-  stringifyYaml(macros: any[]) {
+  stringifyYaml(macros: MacroCard[]) {
     const yamlMatches = macros.map(m => {
       const match: any = {
         trigger: m.trigger,
         replace: m.replace
       };
-      
+
+      if (m.folder) match.folder = m.folder;
       if (m.triggerOptions?.word) match.word = true;
       if (m.triggerOptions?.case) match.case_sensitive = true;
       if (m.triggerOptions?.prop_case) match.propagate_case = true;
-      
+
       if (m.variables && m.variables.length > 0) {
         match.vars = m.variables.map((v: any) => {
           const varOutput: any = {
@@ -125,14 +128,14 @@ export const EspansoService = {
           // Transform random choices to array for Espanso compatibility
           if (v.type === 'random') {
             if (typeof varOutput.params.choices === 'string') {
-               varOutput.params.choices = varOutput.params.choices.split(',').map((c: string) => c.trim()).filter(Boolean);
+              varOutput.params.choices = varOutput.params.choices.split(',').map((c: string) => c.trim()).filter(Boolean);
             }
           }
 
           return varOutput;
         });
       }
-      
+
       return match;
     });
 
