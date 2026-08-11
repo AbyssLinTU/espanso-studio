@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⚡ Espanso Studio Pro `v1.0.2`
+# ⚡ Espanso Studio Pro `v1.0.3`
 
 > **The Ultimate Visual Environment for Espanso.**  
 > Built with **Rust (Tauri)** and **React (Vite 6)** for maximum performance and a premium desktop experience.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows%2011-0078D4?style=for-the-badge&logo=windows" alt="Platform">
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-0078D4?style=for-the-badge&logo=linux" alt="Platform">
   <img src="https://img.shields.io/badge/Rust-Tauri%202.0-F74C00?style=for-the-badge&logo=rust" alt="Rust">
   <img src="https://img.shields.io/badge/Frontend-React%2019-61DAFB?style=for-the-badge&logo=react" alt="React">
   <img src="https://img.shields.io/github/license/AbyssLinTU/espanso-studio?style=for-the-badge" alt="License">
@@ -23,6 +23,15 @@
 ---
 
 We've reached a stable milestone! Espanso Studio has migrated from a legacy Python bridge to a **native Rust engine** using Tauri. This ensures high-speed execution, minimal memory footprint, and native security.
+
+## 🐧 Version 1.0.3: Linux & Cross-Platform Expansion
+
+The `v1.0.3` release expands compatibility by adding native **Linux support** alongside Windows, ensuring dynamic Espanso config path resolution and system binary verification on Linux:
+
+### 🐧 Linux Support & OS Adaptability
+- **🌐 Dynamic Path Resolution**: Replaced OS-hardcoded path lookup with intelligent config folder resolution (`APPDATA` on Windows and `$XDG_CONFIG_HOME` / `~/.config/espanso` on Linux).
+- **🔍 Native Binary Verification**: Updated Espanso detection mechanisms to dynamically verify binaries using OS-native inspection (`which espanso` on Linux vs `where espanso` on Windows).
+- **💡 Dynamic UI Integration**: Updated Help View and UI panels to automatically reflect the exact config path for the current OS (`base.yml` path resolution).
 
 ## 🏗️ Version 1.0.2: The Core & Logic Evolution
 

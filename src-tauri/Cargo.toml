@@ -1,6 +1,6 @@
 [package]
 name = "espanso-studio-pro"
-version = "1.0.1"
+version = "1.0.3"
 description = "Premium visual orchestrator for Espanso"
 authors = ["AbyssLinTU"]
 license = ""

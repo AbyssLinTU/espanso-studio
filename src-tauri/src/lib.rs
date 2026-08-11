@@ -17,17 +17,7 @@ fn get_espanso_config_dir() -> Result<PathBuf, String> {
         Ok(path)
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        let home = std::env::var("HOME").map_err(|e| format!("Could not find HOME: {}", e))?;
-        let mut path = PathBuf::from(home);
-        path.push("Library");
-        path.push("Application Support");
-        path.push("espanso");
-        Ok(path)
-    }
-
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    #[cfg(not(target_os = "windows"))]
     {
         if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
             if !xdg_config.is_empty() {
