@@ -1,18 +1,52 @@
 use std::fs;
 use std::path::PathBuf;
+#[allow(unused_imports)]
 use tauri::Manager;
-use tauri_plugin_shell::ShellExt;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+fn get_espanso_config_dir() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let appdata = std::env::var("APPDATA").map_err(|e| format!("Could not find APPDATA: {}", e))?;
+        let mut path = PathBuf::from(appdata);
+        path.push("espanso");
+        Ok(path)
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let home = std::env::var("HOME").map_err(|e| format!("Could not find HOME: {}", e))?;
+        let mut path = PathBuf::from(home);
+        path.push("Library");
+        path.push("Application Support");
+        path.push("espanso");
+        Ok(path)
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
+            if !xdg_config.is_empty() {
+                let mut path = PathBuf::from(xdg_config);
+                path.push("espanso");
+                return Ok(path);
+            }
+        }
+        let home = std::env::var("HOME").map_err(|e| format!("Could not find HOME: {}", e))?;
+        let mut path = PathBuf::from(home);
+        path.push(".config");
+        path.push("espanso");
+        Ok(path)
+    }
+}
+
 #[tauri::command]
 fn get_espanso_path() -> Result<String, String> {
-    let appdata = std::env::var("APPDATA").map_err(|e| e.to_string())?;
-    let mut path = PathBuf::from(appdata);
-    path.push("espanso");
+    let mut path = get_espanso_config_dir()?;
     path.push("match");
     Ok(path.to_string_lossy().to_string())
 }
@@ -92,7 +126,7 @@ fn check_espanso_installed() -> bool {
 
     #[cfg(not(target_os = "windows"))]
     let output = std::process::Command::new("sh")
-        .args(["-c", "espanso --version"])
+        .args(["-c", "which espanso"])
         .output();
 
     if output.is_ok() && output.unwrap().status.success() {
@@ -116,10 +150,8 @@ fn check_espanso_installed() -> bool {
         }
     }
 
-    // 3. Last fallback: Check if the config folder exists in AppData
-    let appdata = std::env::var("APPDATA").unwrap_or_default();
-    if !appdata.is_empty() {
-        let config_path = std::path::Path::new(&appdata).join("espanso");
+    // 3. Last fallback: Check if the config folder exists
+    if let Ok(config_path) = get_espanso_config_dir() {
         if config_path.exists() {
             return true;
         }
@@ -130,16 +162,18 @@ fn check_espanso_installed() -> bool {
 
 #[tauri::command]
 async fn install_espanso(app: tauri::AppHandle) -> Result<(), String> {
-    let resource_path = app.path().resolve("resources/espanso-installer.exe", tauri::path::BaseDirectory::Resource)
-        .map_err(|e| format!("Could not find installer: {}", e))?;
-
     #[cfg(target_os = "windows")]
     {
+        let resource_path = app.path().resolve("resources/espanso-installer.exe", tauri::path::BaseDirectory::Resource)
+            .map_err(|e| format!("Could not find installer: {}", e))?;
         std::process::Command::new(resource_path)
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("Failed to launch installer: {}", e))?;
     }
+
+    #[cfg(not(target_os = "windows"))]
+    let _ = app;
 
     Ok(())
 }

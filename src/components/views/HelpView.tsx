@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { BookOpen, Zap, Pencil, Variable, Layers, Save, RefreshCw, ChevronRight } from 'lucide-react';
+import { safeInvoke } from '../../services/EspansoService';
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -56,6 +58,18 @@ const InfoCard = ({ title, text, accent = 'bg-[#6366F1]/10 border-[#6366F1]/30' 
 );
 
 export const HelpView = () => {
+  const [configPath, setConfigPath] = useState<string>('Loading...');
+
+  useEffect(() => {
+    safeInvoke<string>('get_espanso_path').then((path) => {
+      if (path) {
+        setConfigPath(path + '/base.yml');
+      } else {
+        setConfigPath('~/.config/espanso/match/base.yml');
+      }
+    });
+  }, []);
+
   return (
     <div className="flex-1 h-full overflow-y-auto bg-[#0B0B0D] flex justify-center">
       <div className="w-full max-w-3xl px-6 pt-20 pb-12 flex flex-col gap-12">
@@ -232,7 +246,7 @@ export const HelpView = () => {
             <InfoCard title="Backup File (.bak)" text="Every time you save, the app creates base.bak in your espanso/match folder. If something goes wrong, rename .bak back to .yml." />
             <div className="flex items-center gap-2 text-[13px] text-[#71717A]">
               <span>Your configuration file is located at:</span>
-              <Code text="%APPDATA%\espanso\match\base.yml" />
+              <Code text={configPath} />
             </div>
           </div>
         </Section>
