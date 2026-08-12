@@ -14,7 +14,7 @@ export default defineConfig(async () => ({
     },
   },
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom',
     globals: true,
   },
 }));

@@ -98,7 +98,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetchFiles();
+    const loadFiles = async () => {
+      await fetchFiles();
+    };
+    loadFiles();
   }, [fetchFiles]);
 
   // Listen for the 'espanso-save' event dispatched by the store after saveMacro() or deleteMacro()

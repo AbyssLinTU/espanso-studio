@@ -34,7 +34,8 @@ export interface Variable {
   id: string;
   name: string;
   type: 'date' | 'shell' | 'clipboard' | 'form' | 'random' | 'script' | 'echo';
-  params: Record<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: Record<string, any>;
 }
 
 interface AppState {
@@ -115,7 +116,7 @@ interface AppState {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   addNode: (type: string, position: { x: number; y: number }, label?: string) => void;
-  updateNodeData: (id: string, newData: any) => void;
+  updateNodeData: (id: string, newData: Record<string, unknown>) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -517,7 +518,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     let compiledText = '';
     let currentId = triggerNode.id;
-    let visited = new Set<string>();
+    const visited = new Set<string>();
     const newVars: Variable[] = [];
 
     // Simple linear traversal for now (Concatenation pattern)

@@ -29,7 +29,7 @@ export const QuickEditor = () => {
       varName = `${baseName}${counter}`;
     }
 
-    const varId = `var_${Math.floor(Math.random() * 10000)}`;
+    const varId = `var_${varName}`;
     const snippetToInsert = btn.type === 'form' ? `{{${varName}.value}}` : `{{${varName}}}`;
     
     setReplaceText(replaceText + snippetToInsert);

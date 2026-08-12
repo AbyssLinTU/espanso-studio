@@ -23,7 +23,7 @@ export const TemplateNode = ({ id, data, selected }: NodeProps) => {
       }`}
     >
       <div className="bg-[#333338] p-2 text-white text-xs font-bold rounded-t-xl text-center">
-        {(data as any).label || 'Concat/Template'}
+        {((data as Record<string, unknown>)?.label as string) || 'Concat/Template'}
       </div>
 
       <div className="p-3">

@@ -1,8 +1,24 @@
+import type { ElementType } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Type, Calendar, Terminal, FormInput, Clipboard, Shuffle, Hash, Link2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const TYPE_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
+export interface CustomNodeData {
+  nodeType: string;
+  label?: string;
+  varName?: string;
+  text?: string;
+  format?: string;
+  cmd?: string;
+  layout?: string;
+  title?: string;
+  choices?: string;
+  path?: string;
+  echo?: string;
+  [key: string]: unknown;
+}
+
+const TYPE_CONFIG: Record<string, { icon: ElementType; color: string; label: string }> = {
   trigger: { icon: Type, color: '#10B981', label: 'Trigger' }, // Emerald
   T: { icon: Type, color: '#6366F1', label: 'Text Output' }, // Indigo
   D: { icon: Calendar, color: '#8B5CF6', label: 'Date Gen' }, // Violet
@@ -14,7 +30,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; label: string }> =
   '&': { icon: Link2, color: '#64748B', label: 'Concat' }, // Slate
 };
 
-export const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
+export const CustomNode = ({ data, selected }: { data: CustomNodeData; selected: boolean }) => {
   const tConfig = TYPE_CONFIG[data.nodeType] || TYPE_CONFIG['T'];
   const Icon = tConfig.icon;
 

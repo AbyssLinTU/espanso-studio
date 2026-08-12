@@ -16,9 +16,9 @@ export class YamlProcessor {
     targetTrigger: string,
     newTrigger: string,
     newReplace: string,
-    newVars?: any[]
+    newVars?: Record<string, unknown>[]
   ): Document {
-    const matches = doc.get('matches') as any;
+    const matches = doc.get('matches') as { items?: Array<{ get: (key: string) => unknown }> } | null;
     if (!matches || !matches.items) return doc;
 
     for (let i = 0; i < matches.items.length; i++) {

@@ -1,5 +1,5 @@
 import { parseDocument, stringify } from 'yaml';
-import type { MacroCard } from '../store/useStore';
+import type { MacroCard, Variable } from '../store/useStore';
 
 export async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   try {
@@ -11,20 +11,40 @@ export async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>)
   }
 }
 
+type YamlItemNode = Record<string, unknown> & {
+  items?: unknown[];
+  get?: (key: string) => unknown;
+  word?: boolean;
+  case_sensitive?: boolean;
+  propagate_case?: boolean;
+  vars?: unknown;
+  trigger?: string;
+  replace?: unknown;
+  folder?: string;
+};
+
+interface YamlParamItem {
+  key?: { value?: string };
+  value?: {
+    value?: string;
+    items?: Array<{ value?: string }>;
+  };
+}
+
 export const EspansoService = {
-  async listFiles() {
+  async listFiles(): Promise<string[] | null> {
     return await safeInvoke<string[]>('list_yaml_files');
   },
 
-  async readFile(filename: string) {
+  async readFile(filename: string): Promise<string | null> {
     return await safeInvoke<string>('read_file', { filename });
   },
 
-  async saveFile(filename: string, content: string) {
+  async saveFile(filename: string, content: string): Promise<void | null> {
     return await safeInvoke<void>('save_file', { filename, content });
   },
 
-  async restart() {
+  async restart(): Promise<void | null> {
     return await safeInvoke<void>('restart_espanso');
   },
 
@@ -40,53 +60,57 @@ export const EspansoService = {
   parseYaml(content: string): MacroCard[] {
     try {
       const doc = parseDocument(content);
-      const matchesNode = doc.get('matches');
+      const matchesNode = doc.get('matches') as YamlItemNode | null;
 
-      let matchesArray = [];
-      if (matchesNode && Array.isArray((matchesNode as any).items || matchesNode)) {
-        matchesArray = (matchesNode as any).items || matchesNode;
+      let matchesArray: YamlItemNode[] = [];
+      if (matchesNode) {
+        matchesArray = (Array.isArray(matchesNode.items) ? matchesNode.items : (Array.isArray(matchesNode) ? matchesNode : [])) as YamlItemNode[];
       }
 
-      return matchesArray.map((m: any) => {
+      return matchesArray.map((m) => {
         const triggerOpts = {
-          word: m.get?.('word') ?? m.word ?? false,
-          case: m.get?.('case_sensitive') ?? m.case_sensitive ?? false,
-          prop_case: m.get?.('propagate_case') ?? m.propagate_case ?? false
+          word: Boolean(m.get?.('word') ?? m.word ?? false),
+          case: Boolean(m.get?.('case_sensitive') ?? m.case_sensitive ?? false),
+          prop_case: Boolean(m.get?.('propagate_case') ?? m.propagate_case ?? false)
         };
 
-        const varsObj = m.get?.('vars') ?? m.vars;
-        let varsArray = [];
-        if (varsObj && Array.isArray((varsObj as any).items || varsObj)) {
-          const vItems = (varsObj as any).items || varsObj;
-          varsArray = vItems.map((v: any) => {
-            const paramsNode = v.get?.('params') ?? v.params;
-            const paramsObj: any = {};
-            if (paramsNode && paramsNode.items) {
-              paramsNode.items.forEach((item: any) => {
-                let val = item.value?.value;
+        const varsObj = (m.get?.('vars') ?? m.vars) as YamlItemNode | null;
+        let varsArray: Variable[] = [];
+        if (varsObj) {
+          const vItems = (Array.isArray(varsObj.items) ? varsObj.items : (Array.isArray(varsObj) ? varsObj : [])) as YamlItemNode[];
+          varsArray = vItems.map((v) => {
+            const paramsNode = (v.get?.('params') ?? v.params) as { items?: YamlParamItem[] } | Record<string, unknown> | null;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const paramsObj: Record<string, any> = {};
+            if (paramsNode && 'items' in paramsNode && Array.isArray(paramsNode.items)) {
+              paramsNode.items.forEach((item) => {
+                let val: unknown = item.value?.value;
                 if (item.value && Array.isArray(item.value.items)) {
-                  val = item.value.items.map((i: any) => i.value).join(', ');
+                  val = item.value.items.map((i: { value?: string }) => i.value).join(', ');
                 } else if (item.value && Array.isArray(item.value)) {
-                  val = item.value.join(', ');
+                  val = (item.value as Array<{ value?: string }>).map(i => typeof i === 'string' ? i : i.value).join(', ');
                 }
-                paramsObj[item.key.value] = val;
+                if (item.key?.value) {
+                  paramsObj[item.key.value] = val;
+                }
               });
             } else if (paramsNode) {
               Object.assign(paramsObj, paramsNode);
             }
+            const nameStr = String(v.get?.('name') ?? v.name ?? '');
             return {
-              id: v.get?.('name') ?? v.name,
-              name: v.get?.('name') ?? v.name,
-              type: v.get?.('type') ?? v.type,
+              id: nameStr,
+              name: nameStr,
+              type: String(v.get?.('type') ?? v.type ?? '') as Variable['type'],
               params: paramsObj
             };
           });
         }
 
         return {
-          trigger: m.get?.('trigger') ?? m.trigger ?? '',
+          trigger: String(m.get?.('trigger') ?? m.trigger ?? ''),
           replace: String(m.get?.('replace') ?? m.replace ?? ''),
-          folder: m.get?.('folder') ?? m.folder ?? '',
+          folder: String(m.get?.('folder') ?? m.folder ?? ''),
           triggerOptions: triggerOpts,
           variables: varsArray
         };
@@ -99,7 +123,7 @@ export const EspansoService = {
 
   stringifyYaml(macros: MacroCard[]) {
     const yamlMatches = macros.map(m => {
-      const match: any = {
+      const match: Record<string, unknown> = {
         trigger: m.trigger,
         replace: m.replace
       };
@@ -110,8 +134,8 @@ export const EspansoService = {
       if (m.triggerOptions?.prop_case) match.propagate_case = true;
 
       if (m.variables && m.variables.length > 0) {
-        match.vars = m.variables.map((v: any) => {
-          const varOutput: any = {
+        match.vars = m.variables.map((v) => {
+          const varOutput: { name: string; type: string; params: Record<string, unknown> } = {
             name: v.name,
             type: v.type,
             params: { ...v.params }
@@ -120,7 +144,7 @@ export const EspansoService = {
           // Transform form parameters for Espanso compatibility
           if (v.type === 'form') {
             if (!varOutput.params.layout && varOutput.params.title) {
-              varOutput.params.layout = `[[${varOutput.params.title}]]`;
+              varOutput.params.layout = `[[${String(varOutput.params.title)}]]`;
               delete varOutput.params.title;
             }
           }
